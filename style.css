@@ -1,0 +1,59 @@
+
+.stat-block {
+  font-family: Quattrocento, serif;
+  line-height: 1.6rem;
+}
+
+.stat-block hr {
+  background-color: rgba(0, 0, 0, 0);
+  background-image: linear-gradient(90deg, rgb(125, 52, 37) 0px, rgba(125, 52, 37, 0));
+
+  background: linear-gradient(90deg,#a82315 0,rgba(168,35,21,0));
+  border: 0;
+  height: 2px;
+  margin: 1rem 0;
+}
+.stat-block .abilities-block {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: stretch;
+  align-content: center;
+}
+
+.stat-block .abilities-block > div.score {
+  display: flex;
+  flex-direction: column;
+  margin: 0 1rem;
+}
+
+.stat-block .abilities-block > div.score span.stat {
+  display: block;
+  text-align: center;
+  font-weight: bolder;
+  font-size: 1.4rem;
+  font-variant-caps: all-petite-caps;
+}
+
+.stat-block .abilities-block > div.score span.score {
+  display: block;
+  text-align: center;
+}
+
+.stat-block .creature-heading .tags span {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  margin: auto 1rem;
+  border-bottom: 2px dotted rgb(125, 52, 37);
+}
+
+.stat-block input, .stat-block select {
+  font-family: Quattrocento, serif;
+  font-size: 1.2rem;
+  line-height: 1.6rem;
+  border: 0;
+  padding: 0.6rem;
+}
+.stat-block input[name=name] {
+  font-size: 2rem;
+}

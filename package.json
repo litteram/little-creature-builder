@@ -1,0 +1,23 @@
+{
+  "name": "@zenlor/little-monster-maker",
+  "description": "monster maker for foundryvtt",
+  "version": "0.1.0",
+  "author": "zenlor",
+  "license": "MIT",
+  "main": "app/index.js",
+  "scripts": {},
+  "type": "module",
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^24.0.1",
+    "@rollup/plugin-node-resolve": "^15.0.1",
+    "@rollup/plugin-typescript": "^11.0.0",
+    "@types/mithril": "^2.0.12",
+    "mithril": "^2.2.2",
+    "rambda": "^7.5.0",
+    "rollup": "^3.20.2",
+    "rollup-plugin-include-sourcemaps": "^0.7.0",
+    "rollup-plugin-typescript2": "^0.34.1",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.3"
+  }
+}

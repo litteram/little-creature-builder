@@ -1,0 +1,42 @@
+{
+  "title": "little monster maker",
+  "description": "Monster maker following giffyglyph grimoire",
+  "version": "0.1",
+  "authors": [
+    {
+      "name": "lo.gi",
+      "discord": "lo.gi#5245"
+    }
+  ],
+  "socket": true,
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "esmodules": ["module.js"],
+  "styles": [],
+  "relationships": {
+    "requires": [
+      {
+        "id": "lib-wrapper",
+        "type": "module",
+        "compatibility": {
+          "minimum": "1.0.0.0",
+          "verified": "1.12.6.0"
+        }
+      }
+    ]
+  },
+  "url": "https://github.com/zenlor/little-monster-maker",
+  "download": "https://github.com/litteram/little-monster-maker/archive/refs/heads/main.zip",
+  "manifest": "https://github.com/litteram/little-monster-maker/raw/main/module.json",
+  "bugs": "https://github.com/zenlor/little-monster-maker/issues",
+  "id": "little-things",
+  "compatibility": {
+    "minimum": "10",
+    "verified": "10"
+  }
+}
