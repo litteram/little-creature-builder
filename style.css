@@ -1,0 +1,147 @@
+
+body {
+  background-color: rgb(32,32,32);
+  color: rgb(230, 230, 230);
+}
+
+.stat-block {
+  font-family: Quattrocento, serif;
+  line-height: 1.6rem;
+}
+
+.stat-block hr {
+  background-color: rgba(0, 0, 0, 0);
+  background-image: linear-gradient(90deg, rgb(125, 52, 37) 0px, rgba(125, 52, 37, 0));
+
+  background: linear-gradient(90deg,#a82315 0,rgba(168,35,21,0));
+  border: 0;
+  height: 2px;
+  margin: 1rem 0;
+}
+.stat-block .abilities-block {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: stretch;
+  align-content: center;
+}
+
+.stat-block .abilities-block > div.score {
+  display: flex;
+  flex-direction: column;
+  margin: 0 1rem;
+}
+
+.stat-block .abilities-block > div.score span.stat {
+  display: block;
+  text-align: center;
+  font-weight: bolder;
+  font-size: 1.4rem;
+  font-variant-caps: all-petite-caps;
+}
+
+.stat-block .abilities-block > div.score span.score {
+  display: block;
+  text-align: center;
+}
+
+.stat-block .creature-heading .tags span {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  margin: auto 1rem;
+  border-bottom: 2px dotted rgb(125, 52, 37);
+}
+
+.stat-block input, .stat-block select {
+  font-family: Quattrocento, serif;
+  font-size: 1.2rem;
+  line-height: 1.6rem;
+  border: 0;
+  padding: 0.6rem;
+  background-color: rgb(32,32,32);
+  color: rgb(230, 230, 230);
+}
+.stat-block input[name=name] {
+  font-size: 2rem;
+}
+
+
+.stat-block .property-line {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  align-content: center;
+  font-size: 1rem;
+}
+.stat-block .property-line label {
+  flex-grow: 2;
+  min-width: 33%;
+  max-width: 33%;
+  border-bottom: 1px dashed rgb(125,52,37);
+
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+.stat-block .property-line select {
+  flex-grow: 1;
+  padding: 0;
+}
+.stat-block .property-line .tags {
+  flex-grow: 3;
+  padding-left: 1rem;
+}
+
+.stat-block .tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: center;
+  font-size: 1rem;
+}
+
+.stat-block .tags select,
+.stat-block .tags option {
+  font-size: 1rem;
+}
+
+.stat-block .tags .tag {
+  margin: 0 0.4rem;
+}
+.stat-block span.delete,
+.monster-list span.delete {
+  color: rgb(125,52,37);
+  font-weight: bolder;
+  font-size: 1.2rem;
+  padding: 0.4rem;
+}
+
+.stat-block span.delete:hover,
+.monster-list span.delete:hover {
+  color:  rgb(225,52,37);
+  cursor: pointer;
+}
+
+.monster-list .compendium {
+  display: table;
+  font-size: 1rem;
+}
+.monster-list .compendium > * {
+  display: table-row;
+}
+.monster-list .compendium .creature {
+  cursor: pointer;
+}
+.monster-list .compendium .creature:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+.monster-list .creature span {
+  display: table-cell;
+  padding: 0.6rem;
+}
+.monster-list .creature span.level {
+  text-align: center
+}
+.monster-list .creature span.uid {}
