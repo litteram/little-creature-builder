@@ -5,7 +5,9 @@
   "author": "zenlor",
   "license": "MIT",
   "main": "app/index.js",
-  "scripts": {},
+  "scripts": {
+    "build": "npx rollup -c rollup.config.js -i src/standalone.ts -o standalone.js && npx rollup -c rollup.config.js -o module.js"
+  },
   "type": "module",
   "devDependencies": {
     "@rollup/plugin-commonjs": "^24.0.1",

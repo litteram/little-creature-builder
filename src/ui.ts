@@ -215,7 +215,8 @@ const HitPointComponent: m.Component<{ sb: StatBlock }> = {
     const { hit_points, hit_die } = attrs.sb
 
     return m(".property-line.hit-points", [
-      m("b", "Hit Points"), ": ",
+      m("b", "Hit Points"),
+      ": ",
       `${hit_points} (${hit_die[0]}${hit_die[1]} + ${hit_die[2]})`
     ])
   }
@@ -225,8 +226,19 @@ const HitPointComponent: m.Component<{ sb: StatBlock }> = {
 const ChallengeRatingComponent: m.Component<{ sb: StatBlock }> = {
   view({ attrs }) {
     return m(".property-line.challenge",
-      m("b", "Challenge"), ": ",
+      m("b", "Challenge"),
+      ": ",
       attrs.sb.challenge_rating, " ( ", attrs.sb.experience, " ) "
+    )
+  }
+}
+
+const DamagePerActionComponent: m.Comp<{ sb: StatBlock }> = {
+  view({ attrs }) {
+    return m(".property-line.damage-per-turn",
+      m("b", "Damage per Action"),
+      ": ",
+      attrs.sb.damage_per_action,
     )
   }
 }
@@ -340,22 +352,6 @@ const PropertyLines: m.Component = {
   }
 }
 
-const PropertyBlocks: m.Component = {
-  view() {
-    return m(".properties", [
-      m(".property-block.properties", [
-        m("h4", "Antimagic Susceptibility"),
-        "Some kind of description",
-      ]),
-
-      m(".property-block.properties", [
-        m("h4", "False appearance"),
-        "Some other kind of description",
-      ]),
-    ])
-  }
-}
-
 const ActionsBlock: m.Component = {
   view() {
     return m(".actions", [
@@ -462,13 +458,13 @@ const StatBlockComponent: m.Component = {
           m(HitPointComponent, { sb: state.current }),
           m(SpeedComponent, { sb: state.current }),
           m(ChallengeRatingComponent, { sb: state.current }),
+          m(DamagePerActionComponent, { sb: state.current }),
         ]),
         m("hr"),
         m(AbilitiesBlockComponent(), { ability_modifiers: state.current.ability_modifiers }),
         m("hr"),
         m(PropertyLines),
         m("hr"),
-        m(PropertyBlocks),
         m(ActionsBlock),
       ]),
 

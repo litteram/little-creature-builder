@@ -1,4 +1,4 @@
-import { map } from "rambda"
+import { map, max, values, reduce } from "rambda"
 import { sum, sump, mulp } from "./utils.js"
 import { crc16 } from "./crc.js"
 import * as tables from "./tables.js"
@@ -10,6 +10,19 @@ export type Abilities = {
   int: number
   wis: number
   cha: number
+}
+
+export type Weapon = {
+  die: string
+  damage_type: string
+}
+
+export type Spell = string
+export type Die = string
+
+export type Attacks = {
+  spells: Array<[Spell, Die]>
+  weapon: Array<[Weapon, Die]>
 }
 
 export type Properties = { [key: string]: string[] }
@@ -40,7 +53,7 @@ export type StatBlock = {
   ability_modifiers: Abilities
   challenge_rating: string
 
-  attacks: string[]
+  attacks: Attacks
   specials: string[]
   properties: Properties
 }
@@ -171,20 +184,43 @@ export const CreatureCompendium: CreatureCompendium = {
 function calculateHitDie(sb: Partial<StatBlock>): [number, string, number] {
   let die = tables.HitDies[sb.size]
   let estimate = tables.dies2hp[die]
-  let base = sb.ability_modifiers.con * sb.level
-  let target = sb.hit_points - base
+  // let target = sb.hit_points - base
 
+  let sway = Math.ceil((sb.hit_points / 100) * 15)
   let result = 0
   let dies = 0
-  while (result < (target - 10) && result < (target + 10)) {
+  while (result < (sb.hit_points - sway) && result < (sb.hit_points + sway)) {
     dies += 1
     result = estimate * dies
   }
+
+  let base = dies > 0 ? sb.ability_modifiers.con * dies : 1
 
   return [
     dies,
     die,
     base,
+  ]
+}
+
+function calculateWeaponAttackDie(attacks: number, sb: StatBlock) {
+  const dmg = sb.damage_per_action
+  const modifier = reduce(max, 0, [
+    sb.ability_modifiers.str,
+    sb.ability_modifiers.dex,
+    sb.ability_modifiers.int,
+    sb.ability_modifiers.wis,
+    sb.ability_modifiers.cha,
+  ]) as number
+
+  let sway = Math.ceil(dmg / 100 * 15)
+
+  for (const d in tables.dies2hp) {
+    let avg = tables.dies2hp[d]
+    if (dmg - modifier + avg < sway) {}
+  }
+
+  return [
   ]
 }
 

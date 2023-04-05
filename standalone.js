@@ -98,20 +98,11 @@
 		return Vnode$4("", attrs.key, attrs, children)
 	};
 
-	var hasOwn$2;
-	var hasRequiredHasOwn;
-
-	function requireHasOwn () {
-		if (hasRequiredHasOwn) return hasOwn$2;
-		hasRequiredHasOwn = 1;
-
-		hasOwn$2 = {}.hasOwnProperty;
-		return hasOwn$2;
-	}
+	var hasOwn$2 = {}.hasOwnProperty;
 
 	var Vnode$3 = requireVnode();
 	var hyperscriptVnode$1 = hyperscriptVnode$2;
-	var hasOwn$1 = requireHasOwn();
+	var hasOwn$1 = hasOwn$2;
 
 	var selectorParser = /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*("|'|)((?:\\["'\]]|.)*?)\5)?\])/g;
 	var selectorCache = {};
@@ -1467,7 +1458,7 @@
 		if (hasRequiredAssign) return assign;
 		hasRequiredAssign = 1;
 
-		var hasOwn = requireHasOwn();
+		var hasOwn = hasOwn$2;
 
 		assign = Object.assign || function(target, source) {
 			for (var key in source) {
@@ -1529,7 +1520,7 @@
 	}
 
 	var buildPathname = requireBuild();
-	var hasOwn = requireHasOwn();
+	var hasOwn = hasOwn$2;
 
 	var request$2 = function($window, Promise, oncompletion) {
 		var callbackCount = 0;
@@ -1923,7 +1914,7 @@
 		// }
 		// ```
 
-		var hasOwn = requireHasOwn();
+		var hasOwn = hasOwn$2;
 		// Words in RegExp literals are sometimes mangled incorrectly by the internal bundler, so use RegExp().
 		var magic = new RegExp("^(?:key|oninit|oncreate|onbeforeupdate|onupdate|onbeforeremove|onremove)$");
 
@@ -3374,14 +3365,15 @@
 	function calculateHitDie(sb) {
 	    let die = HitDies[sb.size];
 	    let estimate = dies2hp[die];
-	    let base = sb.ability_modifiers.con * sb.level;
-	    let target = sb.hit_points - base;
+	    // let target = sb.hit_points - base
+	    let sway = Math.ceil((sb.hit_points / 100) * 15);
 	    let result = 0;
 	    let dies = 0;
-	    while (result < (target - 10) && result < (target + 10)) {
+	    while (result < (sb.hit_points - sway) && result < (sb.hit_points + sway)) {
 	        dies += 1;
 	        result = estimate * dies;
 	    }
+	    let base = dies > 0 ? sb.ability_modifiers.con * dies : 1;
 	    return [
 	        dies,
 	        die,
@@ -3558,7 +3550,8 @@
 	    view({ attrs }) {
 	        const { hit_points, hit_die } = attrs.sb;
 	        return mithril(".property-line.hit-points", [
-	            mithril("b", "Hit Points"), ": ",
+	            mithril("b", "Hit Points"),
+	            ": ",
 	            `${hit_points} (${hit_die[0]}${hit_die[1]} + ${hit_die[2]})`
 	        ]);
 	    }
@@ -3566,6 +3559,11 @@
 	const ChallengeRatingComponent = {
 	    view({ attrs }) {
 	        return mithril(".property-line.challenge", mithril("b", "Challenge"), ": ", attrs.sb.challenge_rating, " ( ", attrs.sb.experience, " ) ");
+	    }
+	};
+	const DamagePerActionComponent = {
+	    view({ attrs }) {
+	        return mithril(".property-line.damage-per-turn", mithril("b", "Damage per Action"), ": ", attrs.sb.damage_per_action);
 	    }
 	};
 	const SpeedComponent = {
@@ -3651,20 +3649,6 @@
 	                        state.current.properties.languages = val;
 	                    }
 	                })
-	            ]),
-	        ]);
-	    }
-	};
-	const PropertyBlocks = {
-	    view() {
-	        return mithril(".properties", [
-	            mithril(".property-block.properties", [
-	                mithril("h4", "Antimagic Susceptibility"),
-	                "Some kind of description",
-	            ]),
-	            mithril(".property-block.properties", [
-	                mithril("h4", "False appearance"),
-	                "Some other kind of description",
 	            ]),
 	        ]);
 	    }
@@ -3758,13 +3742,13 @@
 	                    mithril(HitPointComponent, { sb: state.current }),
 	                    mithril(SpeedComponent, { sb: state.current }),
 	                    mithril(ChallengeRatingComponent, { sb: state.current }),
+	                    mithril(DamagePerActionComponent, { sb: state.current }),
 	                ]),
 	                mithril("hr"),
 	                mithril(AbilitiesBlockComponent(), { ability_modifiers: state.current.ability_modifiers }),
 	                mithril("hr"),
 	                mithril(PropertyLines),
 	                mithril("hr"),
-	                mithril(PropertyBlocks),
 	                mithril(ActionsBlock),
 	            ]),
 	            mithril(SimpleCreatureJSON),
