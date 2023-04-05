@@ -98,11 +98,20 @@
 		return Vnode$4("", attrs.key, attrs, children)
 	};
 
-	var hasOwn$2 = {}.hasOwnProperty;
+	var hasOwn$2;
+	var hasRequiredHasOwn;
+
+	function requireHasOwn () {
+		if (hasRequiredHasOwn) return hasOwn$2;
+		hasRequiredHasOwn = 1;
+
+		hasOwn$2 = {}.hasOwnProperty;
+		return hasOwn$2;
+	}
 
 	var Vnode$3 = requireVnode();
 	var hyperscriptVnode$1 = hyperscriptVnode$2;
-	var hasOwn$1 = hasOwn$2;
+	var hasOwn$1 = requireHasOwn();
 
 	var selectorParser = /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*("|'|)((?:\\["'\]]|.)*?)\5)?\])/g;
 	var selectorCache = {};
@@ -1458,7 +1467,7 @@
 		if (hasRequiredAssign) return assign;
 		hasRequiredAssign = 1;
 
-		var hasOwn = hasOwn$2;
+		var hasOwn = requireHasOwn();
 
 		assign = Object.assign || function(target, source) {
 			for (var key in source) {
@@ -1520,7 +1529,7 @@
 	}
 
 	var buildPathname = requireBuild();
-	var hasOwn = hasOwn$2;
+	var hasOwn = requireHasOwn();
 
 	var request$2 = function($window, Promise, oncompletion) {
 		var callbackCount = 0;
@@ -1914,7 +1923,7 @@
 		// }
 		// ```
 
-		var hasOwn = hasOwn$2;
+		var hasOwn = requireHasOwn();
 		// Words in RegExp literals are sometimes mangled incorrectly by the internal bundler, so use RegExp().
 		var magic = new RegExp("^(?:key|oninit|oncreate|onbeforeupdate|onupdate|onbeforeremove|onremove)$");
 
@@ -3475,6 +3484,8 @@
 	        return mithril("select", {
 	            name: attrs.name,
 	            onchange(e) {
+	                if (attrs.preventDefault)
+	                    e.preventDefault();
 	                attrs.onchange(e.target.value);
 	            },
 	        }, ...map((choice) => mithril("option", {
@@ -3497,6 +3508,7 @@
 	                onchange(val) {
 	                    vnode.attrs.onchange(selected.concat(val));
 	                },
+	                preventDefault: true
 	            })),
 	            mithril(".tags", ...map((i) => mithril("span.tag", i, mithril("span.delete", {
 	                onclick(e) {
@@ -3572,7 +3584,7 @@
 	            mithril(".property-line.damage-immunities", [
 	                mithril(SelectTagComponent, {
 	                    title: "Damage Immunities",
-	                    name: "senses",
+	                    name: "damage-immunities",
 	                    choices: damage_types,
 	                    selected: state.current.properties.damage_immunities || [],
 	                    onchange(val) {
@@ -3591,13 +3603,31 @@
 	                    },
 	                }),
 	            ]),
+	            mithril(".property-line.damage-weaknesses", mithril(SelectTagComponent, {
+	                title: "Damage Weaknesses",
+	                name: "damage-weaknesses",
+	                choices: damage_types,
+	                selected: state.current.properties.damage_weaknesses || [],
+	                onchange(val) {
+	                    state.set({ properties: { damage_weaknesses: val } });
+	                },
+	            })),
 	            mithril(".property-line.condition-immunities", mithril(SelectTagComponent, {
 	                title: "Condition Immunities",
-	                name: "senses",
+	                name: "condition-immunities",
 	                choices: conditions,
 	                selected: state.current.properties.condition_immunities || [],
 	                onchange(val) {
 	                    state.set({ properties: { condition_immunities: val } });
+	                },
+	            })),
+	            mithril(".property-line.condition-weaknesses", mithril(SelectTagComponent, {
+	                title: "Condition Weaknesses",
+	                name: "condition-weaknesses",
+	                choices: conditions,
+	                selected: state.current.properties.condition_weaknesses || [],
+	                onchange(val) {
+	                    state.set({ properties: { condition_weaknesses: val } });
 	                },
 	            })),
 	            mithril(".property-line.senses", [

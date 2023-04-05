@@ -100,12 +100,14 @@ const SelectComponent: m.Component<{
   current: string
   choices: string[]
   onchange: Function
+  preventDefault?: boolean
 }> = {
   view({ attrs }) {
     return m("select",
       {
         name: attrs.name,
         onchange(e: any) {
+          if (attrs.preventDefault) e.preventDefault()
           attrs.onchange(e.target.value)
         },
       },
@@ -139,6 +141,7 @@ const SelectTagComponent: m.Component<{
           onchange(val: string) {
             vnode.attrs.onchange(selected.concat(val))
           },
+          preventDefault: true
         }),
       ),
       m(".tags",
@@ -253,7 +256,7 @@ const PropertyLines: m.Component = {
       m(".property-line.damage-immunities", [
         m(SelectTagComponent, {
           title: "Damage Immunities",
-          name: "senses",
+          name: "damage-immunities",
           choices: tables.damage_types,
           selected: state.current.properties.damage_immunities || [],
           onchange(val) {
@@ -274,14 +277,38 @@ const PropertyLines: m.Component = {
         }),
       ]),
 
+      m(".property-line.damage-weaknesses",
+        m(SelectTagComponent, {
+          title: "Damage Weaknesses",
+          name: "damage-weaknesses",
+          choices: tables.damage_types,
+          selected: state.current.properties.damage_weaknesses || [],
+          onchange(val) {
+            state.set({ properties: { damage_weaknesses: val } })
+          },
+        })
+      ),
+
       m(".property-line.condition-immunities",
         m(SelectTagComponent, {
           title: "Condition Immunities",
-          name: "senses",
+          name: "condition-immunities",
           choices: tables.conditions,
           selected: state.current.properties.condition_immunities || [],
           onchange(val) {
             state.set({ properties: { condition_immunities: val } })
+          },
+        })
+      ),
+
+      m(".property-line.condition-weaknesses",
+        m(SelectTagComponent, {
+          title: "Condition Weaknesses",
+          name: "condition-weaknesses",
+          choices: tables.conditions,
+          selected: state.current.properties.condition_weaknesses || [],
+          onchange(val) {
+            state.set({ properties: { condition_weaknesses: val } })
           },
         })
       ),
