@@ -8,7 +8,7 @@ export default {
   output: {
     sourcemap: true,
     file: "module.js",
-    format: "cjs"
+    format: "iife"
   },
   plugins: [
     typescript(),

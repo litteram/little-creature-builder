@@ -1,3 +1,5 @@
+import { keys } from "rambda"
+
 export type SimpleMonster = {
   level: number,
   armor_class: number,
@@ -563,8 +565,6 @@ export type Role = {
   stat_priorities: [Stat, Stat, Stat, Stat, Stat, Stat,],
 }
 
-export type RoleNames = "controller" | "defender" | "lurker" | "scout" | "sniper" | "striker" | "supporter"
-
 export type Roles = {
   controller: Role,
   defender: Role,
@@ -574,6 +574,8 @@ export type Roles = {
   striker: Role,
   supporter: Role,
 }
+
+export type RoleName = keyof Roles
 
 export const roles: Roles = {
   controller: {
@@ -677,14 +679,14 @@ export type Modifier = {
   special: string[],
 }
 
-export type ModifierName = "normal" | "minion" | "elite" | "solo"
-
 export type Modifiers = {
   normal: Modifier,
   minion: Modifier,
   elite: Modifier,
   solo: Modifier,
 }
+
+export type ModifierName = keyof Modifiers
 
 export const modifiers: Modifiers = {
   normal: {
@@ -760,9 +762,26 @@ export const categories = [
   "undead",
 ]
 
-export const sizes = [
-  "small", "medium", "large"
-]
+export const HitDies = {
+  small: "d4",
+  medium: "d6",
+  large: "d8",
+  huge: "d10",
+  gargantuan: "d20",
+}
+
+export const sizes = keys(HitDies)
+
+export const dies2hp = {
+  d4: 2.5,
+  d6: 3.5,
+  d8: 4.5,
+  d10: 5.5,
+  d12: 6.5,
+  d20: 10.5,
+}
+
+export const dies = keys(dies2hp)
 
 export const alignments = [
   "lawful",
@@ -777,95 +796,101 @@ export const alignments = [
   "unaligned",
 ]
 
-export const skills = [
-  {
-    name: "acrobatics",
-    ability: "dex",
-    foundry: "acr",
-  },
-  {
-    name: "animal_handling",
-    ability: "wis",
-    foundry: "ani",
-  },
-  {
-    name: "arcana",
-    ability: "int",
-    foundry: "arc",
-  },
-  {
-    name: "athletics",
-    ability: "str",
-    foundry: "ath",
-  },
-  {
-    name: "deception",
-    ability: "cha",
-    foundry: "dec",
-  },
-  {
-    name: "history",
-    ability: "int",
-    foundry: "his",
-  },
-  {
-    name: "insight",
-    ability: "wis",
-    foundry: "ins",
-  },
-  {
-    name: "intimidation",
-    ability: "cha",
-    foundry: "itm",
-  },
-  {
-    name: "investigation",
-    ability: "int",
-    foundry: "inv",
-  },
-  {
-    name: "medicine",
-    ability: "wis",
-    foundry: "med",
-  },
-  {
-    name: "nature",
-    ability: "int",
-    foundry: "nat",
-  },
-  {
-    name: "perception",
-    ability: "wis",
-    foundry: "prc",
-  },
-  {
-    name: "performance",
-    ability: "cha",
-    foundry: "prf",
-  },
-  {
-    name: "persuasion",
-    ability: "cha",
-    foundry: "per",
-  },
-  {
-    name: "religion",
-    ability: "int",
-    foundry: "rel",
-  },
-  {
-    name: "sleight_of_hand",
-    ability: "dex",
-    foundry: "slt",
-  },
-  {
-    name: "stealth",
-    ability: "dex",
-    foundry: "ste",
-  },
-  {
-    name: "survival",
-    ability: "wis",
-    foundry: "sur",
-  },
+export const conditions = [
+  "blinded",
+  "charmed",
+  "deafened",
+  "exhaustion",
+  "frightened",
+  "grappled",
+  "incapacitated",
+  "invisible",
+  "paralyzed",
+  "petrified",
+  "poisoned",
+  "prone",
+  "restrained",
+  "stunned",
+  "unconscious",
+]
+
+// https://www.5esrd.com/gamemastering/combat#Damage_Types
+export const damage_types = [
+  "bludgeoning",
+  "cold",
+  "fire",
+  "force",
+  "lightning",
+  "necrotic",
+  "piercing",
+  "poison",
+  "psychic",
+  "radiant",
+  "slashing",
+  "thunder",
+]
+
+export const cr_exp = [
+  { cr: "0", exp: 10 },
+  { cr: "1/8", exp: 25 },
+  { cr: "1/4", exp: 50 },
+  { cr: "1/2", exp: 100 },
+  { cr: "1", exp: 200 },
+  { cr: "2", exp: 450 },
+  { cr: "3", exp: 700 },
+  { cr: "4", exp: 1100 },
+  { cr: "5", exp: 1800 },
+  { cr: "6", exp: 2300 },
+  { cr: "7", exp: 2900 },
+  { cr: "8", exp: 3900 },
+  { cr: "9", exp: 5000 },
+  { cr: "10", exp: 5900 },
+  { cr: "11", exp: 7200 },
+  { cr: "12", exp: 8400 },
+  { cr: "13", exp: 10000 },
+  { cr: "14", exp: 11500 },
+  { cr: "15", exp: 13000 },
+  { cr: "16", exp: 15000 },
+  { cr: "17", exp: 18000 },
+  { cr: "18", exp: 20000 },
+  { cr: "19", exp: 22000 },
+  { cr: "20", exp: 25000 },
+  { cr: "21", exp: 33000 },
+  { cr: "22", exp: 41000 },
+  { cr: "23", exp: 50000 },
+  { cr: "24", exp: 62000 },
+  { cr: "25", exp: 75000 },
+  { cr: "26", exp: 90000 },
+  { cr: "27", exp: 105000 },
+  { cr: "28", exp: 120000 },
+  { cr: "29", exp: 135000 },
+  { cr: "30", exp: 155000 },
+]
+
+// https://www.5esrd.com/languages/
+export const languages = [
+  "common",
+  "dwarvish",
+  "elvish",
+  "giant",
+  "gnomish",
+  "goblin",
+  "halfling",
+  "orc",
+  "abyssal",
+  "celestial",
+  "draconic",
+  "deep speech",
+  "infernal",
+  "primordial",
+  "sylvan",
+  "undercommon",
+]
+
+// https://www.5esrd.com/gamemastering/monsters-foes/#Senses
+export const special_senses = [
+  "blindsight",
+  "darkvision",
+  "tremorsense",
+  "truesight",
 ]

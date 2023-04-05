@@ -22,6 +22,9 @@ function rnd(i: number) {
   return Math.floor(Math.random() * i) + 1
 }
 export const dices = {
+  dx(i) {
+    return rnd(i)
+  },
   d8() {
     return rnd(8)
   },

@@ -1,7 +1,7 @@
 # DD2VTT foundry importer
 
 modulename := "little-things"
-src := $(wildcard src/*.ts src/**/*.ts)
+src := $(wildcard src/*.ts src/**/*.ts rollup.*)
 target := module.js
 zipsources := module.json ${target} ${target}.map
 zipfile := ${modulename}.zip
