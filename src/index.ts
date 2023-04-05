@@ -4,7 +4,7 @@ import { BusinessCardStats } from "./business_card_creature.js"
 console.log("giff:", createCreature({
   name: "Sample",
   level: 5,
-  role: "defender",
+  role: "soldier",
   modifier: "normal",
   size: "medium",
   category: "humanoid",

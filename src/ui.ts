@@ -18,15 +18,23 @@ function formatAbilityScore(score: number) {
     " (" + formatModScore(score) + ") "
 }
 
+function formatString(str: string): string {
+  return str
+    .replace(/[^a-z0-9\-]/ig, " ")
+    .split(" ")
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(" ")
+}
+
 const state = {
   list: {} as { [key: string]: StatBlock },
 
   current: createCreature({
     level: 0,
-    role: "defender",
+    role: "soldier",
     modifier: "normal",
     name: "Naga",
-    alignment: "chaotic-evil",
+    alignment: "chaotic evil",
     category: "fiend (demon)",
     size: "medium",
   }),
@@ -105,7 +113,7 @@ const SelectComponent: m.Component<{
         key: choice,
         value: choice,
         selected: choice == attrs.current
-      }, choice), attrs.choices)
+      }, formatString(choice)), attrs.choices)
     )
   }
 }
@@ -174,7 +182,9 @@ const NameEditorComponent: m.Component = {
   }
 }
 
-function AbilitiesBlockComponent(): m.Component<{ ability_modifiers: any }> {
+function AbilitiesBlockComponent(): m.Component<{
+  ability_modifiers: model.Abilities
+}> {
   function format(abilities: Abilities, mod: string) {
     let score = abilities[mod]
     return m(`.score.${mod}`,
