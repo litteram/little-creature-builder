@@ -1,20 +1,15 @@
 import { keys } from "rambda"
 
-export type SimpleMonster = {
-  level: number,
-  armor_class: number,
-  hit_points: number,
-  attack_bonus: number,
-  damage_per_action: number,
-  spell_dc: [number, number],
-  perception: number,
-  proficiency_bonus: number,
-  saving_throws: [number, number, number],
-  ability_modifiers: [number, number, number, number, number, number],
-  experience: number,
-}
 
-export const levels: SimpleMonster[] = [
+export type Dies = keyof typeof dies_avg
+export type Modifier = keyof typeof modifiers
+export type DamageType = typeof levels[number]
+export type Stat = "str" | "dex" | "con" | "int" | "wis" | "cha"
+export type Role = keyof typeof roles
+export type Roles = typeof roles
+export type SimpleMonster = typeof levels[number]
+
+export const levels = [
   {
     level: -5,
     armor_class: 11,
@@ -548,36 +543,9 @@ export const levels: SimpleMonster[] = [
     ability_modifiers: [11, 8, 5, 4, 3, 2],
     experience: 77750,
   },
-]
+] as const
 
-export type Stat = "str" | "dex" | "con" | "int" | "wis" | "cha"
-
-export type Role = {
-  armor_class: number,
-  hit_points: number,
-  attack_bonus: number,
-  damage_per_action: number,
-  saving_throws: number,
-  spell_dc: number,
-  initiative: number,
-  perception: number,
-  speed: number,
-  stat_priorities: [Stat, Stat, Stat, Stat, Stat, Stat,],
-}
-
-export type Roles = {
-  brute: Role,
-  magical_striker: Role,
-  skill_paragon: Role,
-  skirmisher: Role,
-  sniper: Role,
-  soldier: Role,
-  spellcaster: Role,
-}
-
-export type RoleName = keyof Roles
-
-export const roles: Roles = {
+export const roles = {
   brute: {
     armor_class: 4,
     hit_points: 1.2,
@@ -662,33 +630,10 @@ export const roles: Roles = {
     speed: -5,
     stat_priorities: ["int", "wis", "cha", "con", "dex", "str"],
   },
-}
+} as const
 
 
-export type Modifier = {
-  armor_class: number,
-  attack_bonus: number,
-  hit_points: number,
-  damage_per_action: number,
-  saving_throws: number,
-  spell_dc: number,
-  initiative: number,
-  perception: number,
-  stealth: number,
-  experience: number,
-  special: string[],
-}
-
-export type Modifiers = {
-  normal: Modifier,
-  minion: Modifier,
-  elite: Modifier,
-  solo: Modifier,
-}
-
-export type ModifierName = keyof Modifiers
-
-export const modifiers: Modifiers = {
+export const modifiers = {
   normal: {
     armor_class: 0,
     attack_bonus: 0,
@@ -741,26 +686,7 @@ export const modifiers: Modifiers = {
     experience: 4,
     special: ["paragon", "phase_66", "phase_33"],
   },
-}
-
-export const categories = [
-  "aberration",
-  "beast",
-  "celestial",
-  "construct",
-  "dragon",
-  "elemental",
-  "fey",
-  "fiend",
-  "fiend (demon)",
-  "fiend (devil)",
-  "giant",
-  "humanoid",
-  "monstrosity",
-  "ooze",
-  "plant",
-  "undead",
-]
+} as const
 
 export const HitDies = {
   small: "d4",
@@ -768,67 +694,24 @@ export const HitDies = {
   large: "d8",
   huge: "d10",
   gargantuan: "d20",
-}
+} as const
 
 export const sizes = keys(HitDies)
 
-export const dies2hp = {
+export const dies_avg = {
+  d2: 1,
+  d3: 1.5,
   d4: 2.5,
   d6: 3.5,
   d8: 4.5,
   d10: 5.5,
   d12: 6.5,
   d20: 10.5,
-}
+} as const
 
-export const dies = keys(dies2hp)
+export const dies = keys(dies_avg)
 
-export const alignments = [
-  "lawful",
-  "lawful good",
-  "lawful evil",
-  "neutral",
-  "neutral good",
-  "neutral evil",
-  "chaotic",
-  "chaotic good",
-  "chaotic evil",
-  "unaligned",
-]
-
-export const conditions = [
-  "blinded",
-  "charmed",
-  "deafened",
-  "exhaustion",
-  "frightened",
-  "grappled",
-  "incapacitated",
-  "invisible",
-  "paralyzed",
-  "petrified",
-  "poisoned",
-  "prone",
-  "restrained",
-  "stunned",
-  "unconscious",
-]
-
-// https://www.5esrd.com/gamemastering/combat#Damage_Types
-export const damage_types = [
-  "bludgeoning",
-  "cold",
-  "fire",
-  "force",
-  "lightning",
-  "necrotic",
-  "piercing",
-  "poison",
-  "psychic",
-  "radiant",
-  "slashing",
-  "thunder",
-]
+export const dies_max = dies.map((i) => i.replace(/[^\d]/, "")).map(parseInt)
 
 export const cr_exp = [
   { cr: "0", exp: 10 },
@@ -865,7 +748,7 @@ export const cr_exp = [
   { cr: "28", exp: 120000 },
   { cr: "29", exp: 135000 },
   { cr: "30", exp: 155000 },
-]
+] as const
 
 // https://www.5esrd.com/languages/
 export const languages = [
@@ -885,7 +768,7 @@ export const languages = [
   "primordial",
   "sylvan",
   "undercommon",
-]
+] as const
 
 // https://www.5esrd.com/gamemastering/monsters-foes/#Senses
 export const special_senses = [
@@ -893,4 +776,70 @@ export const special_senses = [
   "darkvision",
   "tremorsense",
   "truesight",
-]
+] as const
+
+export const categories = [
+  "aberration",
+  "beast",
+  "celestial",
+  "construct",
+  "dragon",
+  "elemental",
+  "fey",
+  "fiend",
+  "fiend (demon)",
+  "fiend (devil)",
+  "giant",
+  "humanoid",
+  "monstrosity",
+  "ooze",
+  "plant",
+  "undead",
+] as const
+
+export const alignments = [
+  "lawful",
+  "lawful good",
+  "lawful evil",
+  "neutral",
+  "neutral good",
+  "neutral evil",
+  "chaotic",
+  "chaotic good",
+  "chaotic evil",
+  "unaligned",
+] as const
+
+export const conditions = [
+  "blinded",
+  "charmed",
+  "deafened",
+  "exhaustion",
+  "frightened",
+  "grappled",
+  "incapacitated",
+  "invisible",
+  "paralyzed",
+  "petrified",
+  "poisoned",
+  "prone",
+  "restrained",
+  "stunned",
+  "unconscious",
+] as const
+
+// https://www.5esrd.com/gamemastering/combat#Damage_Types
+export const damage_types = [
+  "cold",
+  "fire",
+  "force",
+  "lightning",
+  "necrotic",
+  "poison",
+  "psychic",
+  "radiant",
+  "thunder",
+  "bludgeoning",
+  "piercing",
+  "slashing",
+] as const

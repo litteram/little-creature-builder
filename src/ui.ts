@@ -1,9 +1,144 @@
 import m from "mithril"
-import { map, keys, range, mergeDeepRight, values } from "rambda"
-import { createCreature, StatBlock, Abilities } from "./model.js"
+import b from "bss"
+import { map, keys, range, values, slice } from "rambda"
+import { state, StatBlock } from "./model.js"
 import * as model from "./model.js"
 import * as tables from "./tables.js"
 
+const colors = {
+  red: "rgb(125, 52, 37)",
+  darkGrey: "rgb(32,32,32)",
+  grey: "rgb(64,64,64)",
+}
+
+const style_base = {
+  input: b`
+    ff Quattrocento, serif
+    fs 1.2rem
+    lh 1.6rem
+    p 0.4rem 0.6rem
+    m 0.4rem 0.6rem
+    border 0
+    background-color: ${colors.darkGrey}
+    color rgb(230, 230, 230)
+    outline 0
+    border-bottom 2px dotted ${colors.red}
+  `.$hover`
+    bc ${colors.grey}
+  `,
+  tags: b`
+    d flex
+    flex-grow 3
+    padding-left 1rem
+    font-variant small-caps
+  `,
+  tag: b`
+    margin-left 1rem
+  `.$hover`
+    cursor pointer
+    color ${colors.red}
+  `,
+  select: b`
+    border-bottom: 2px dotted ${colors.red}
+  `,
+  hr: b`
+    bc rgba(0,0,0,0)
+    bi linear-gradient(90deg, ${colors.red} 0px, rgba(125, 52, 37, 0))
+    border 0
+    h 2px
+    m 1rem 0
+  `,
+  remove: b`
+    c rgb(125,52,37)
+    fw bolder
+    fs 1.2rem
+    p 0.4rem
+    cursor pointer
+  `.$hover`
+    c rgb(225,52,37)
+  `,
+  table: b`
+    d table
+    border-collapse collapse
+  `,
+  table_header: b`
+    font-style italic
+  `,
+  table_row: b`
+    d table-row
+    cursor pointer
+  `,
+  table_cell: b`
+    d table-cell
+    p 0.6rem
+  `,
+  hilight_bg: b`
+  `.$hover`
+    background-color ${colors.grey}
+  `,
+  light_bg: b`
+    background-color ${colors.grey}
+  `,
+  small: b`
+    fs 0.8rem
+    font-variant small-caps
+  `,
+} as const
+
+const style = {
+  ...style_base,
+  select: style_base.select + style_base.input,
+  abilities_block: b`
+    display flex
+    flex-direction row
+    justify-content center
+    align-items stretch
+    align-content center
+  `,
+  ability_modifiers: b`
+    display flex
+    flex-direction column
+    align-content center
+    text-align center
+    margin 0 0.8rem
+  `,
+  ability_modifier_stat: b`
+    fs 1.4rem
+    fw bolder
+    font-variant small-caps
+  `,
+  ability_modifier_score: b`
+    font-style italic
+  `.$hover`
+    b ${colors.grey}
+  `,
+}
+
+const el: { [key: string]: string } = {
+  input: "input" + style.input,
+  tags: "span" + style.tags,
+  tag: "span" + style.tag,
+  select: "select" + style.select,
+  hr: "hr" + style.hr,
+  table: "table" + style.table,
+  table_row: "tr" + style.table_row,
+  table_cell: "td" + style.table_cell,
+  // Component Elements
+  crc: "div" + style.small,
+  stat_block: "div",
+  compendium: "table" + style.table,
+  compendium_header: "thead" + style.table_row + style.light_bg,
+  compendium_row: "tr" + style.table_row + style.hilight_bg,
+  compendium_cell: "td" + style.table_cell,
+  remove: "span" + style.remove,
+  property_block: "div.property_block",
+  property_line: "div.property_line",
+  abilities_block: "div" + style.abilities_block,
+  ability_modifiers: "div" + style.ability_modifiers,
+  ability_modifier_stat: "span" + style.ability_modifier_stat,
+  ability_modifier_score: "span" + style.ability_modifier_score,
+  name_editor: "h1"
+} as const
 
 function formatModScore(mod: number) {
   if (mod < 0) {
@@ -26,135 +161,64 @@ function formatString(str: string): string {
     .join(" ")
 }
 
-const state = {
-  list: {} as { [key: string]: StatBlock },
-
-  current: createCreature({
-    level: 0,
-    role: "soldier",
-    modifier: "normal",
-    name: "Naga",
-    alignment: "chaotic evil",
-    category: "fiend (demon)",
-    size: "medium",
-  }),
-
-  setup() {
-    const data = JSON.parse(localStorage.getItem("current"))
-    if (data) {
-      this.current = data
-    }
-    state.update()
-  },
-
-  update() {
-    this.current = createCreature(this.current)
-    this.save()
-  },
-
-  save() {
-    localStorage.setItem("current", JSON.stringify({
-      level: state.current.level,
-      role: state.current.role,
-      modifier: state.current.modifier,
-      name: state.current.name,
-      size: state.current.size,
-      alignment: state.current.alignment,
-      category: state.current.category,
-    }))
-  },
-
-  set(data: Partial<StatBlock>) {
-    state.current = mergeDeepRight(
-      state.current,
-      data
-    )
-    state.update()
-  },
-
-  loadCreatureCompendium() {
-    const data = JSON.parse(localStorage.getItem("compendium"))
-    this.list = data || {}
-  },
-
-  saveToCompendium(sb: StatBlock) {
-    this.list[sb.uid] = sb
-    this.saveCompendium()
-  },
-
-  deleteFromCompendium(uid: string) {
-    delete this.list[uid]
-    this.saveCompendium()
-  },
-
-  saveCompendium() {
-    localStorage.setItem("compendium", JSON.stringify(this.list))
-  },
-  resetCompendium() {
-    localStorage.setItem("compendium", "{}")
-  }
-}
-
 const SelectComponent: m.Component<{
   name: string
-  current: string
-  choices: string[]
-  onchange: Function
+  current: string | number
+  choices: string[] | readonly string[]
+  onchange: (t: typeof this.choices) => void
   preventDefault?: boolean
+  label?: string
 }> = {
-  view({ attrs }) {
-    return m("select",
+  view({ attrs: { name, current, choices, onchange, preventDefault, label } }) {
+    return m(el.select,
       {
-        name: attrs.name,
+        name,
         onchange(e: any) {
-          if (attrs.preventDefault) e.preventDefault()
-          attrs.onchange(e.target.value)
+          if (preventDefault) e.preventDefault()
+          onchange(e.target.value)
         },
       },
-      ...map((choice: string) => m("option", {
+      m("option", { key: -1, disabled: true, selected: current == "" }, label),
+      ...choices.map((choice: string) => m("option", {
         key: choice,
         value: choice,
-        selected: choice == attrs.current
-      }, formatString(choice)), attrs.choices)
+        selected: choice == current
+      }, formatString(choice)))
     )
   }
 }
 
 const SelectTagComponent: m.Component<{
-  title: string
+  label: string
   name: string
-  choices: string[]
+  choices: string[] | readonly string[]
   selected: string[]
   onchange(s: string[]): void
 }> = {
-  view(vnode) {
-    const { selected } = vnode.attrs
-    const items = vnode.attrs.choices
+  view({ attrs: { label, name, choices, selected, onchange } }) {
+    const items = choices
       .filter((i: string) => selected.indexOf(i) < 0)
 
     return [
-      m("label", vnode.attrs.title,
-        m(SelectComponent, {
-          name: vnode.attrs.name,
-          current: "",
-          choices: ["", ...items],
-          onchange(val: string) {
-            vnode.attrs.onchange(selected.concat(val))
-          },
-          preventDefault: true
-        }),
-      ),
-      m(".tags",
+      m(SelectComponent, {
+        name,
+        label,
+        current: "",
+        choices: [...items],
+        onchange(val: string) {
+          onchange(selected.concat(val))
+        },
+        preventDefault: true
+      }),
+      m(el.tags,
         ...map((i) =>
-          m("span.tag", i,
-            m("span.delete", {
-              onclick(e: Event) {
-                e.preventDefault()
-                const data = selected.filter(x => x !== i)
-                vnode.attrs.onchange(data)
-              }
-            }, "x")
-          ), selected)
+          m(el.tag, {
+            onclick(e: Event) {
+              e.preventDefault()
+              const data = selected.filter(x => x !== i)
+              onchange(data)
+            }
+          }, i), selected)
       )
     ]
   }
@@ -175,7 +239,8 @@ const SelectLevelComponent: m.Component = {
 
 const NameEditorComponent: m.Component = {
   view() {
-    return m("input[type=text]", {
+    return m(el.input, {
+      type: "text",
       name: "name",
       value: state.current.name,
       onkeyup(e: any) {
@@ -185,89 +250,120 @@ const NameEditorComponent: m.Component = {
   }
 }
 
-function AbilitiesBlockComponent(): m.Component<{
-  ability_modifiers: model.Abilities
-}> {
-  function format(abilities: Abilities, mod: string) {
-    let score = abilities[mod]
-    return m(`.score.${mod}`,
-      m("span.stat", mod),
-      m("span.score", formatAbilityScore(score)),
-    )
-  }
+const AbilityModifierComponent: m.Component<{ mod: string }> = {
+  view({ attrs: { mod } }) {
+    const score = model.state.current.ability_modifiers[mod]
 
-  return {
-    view({ attrs }) {
-      return m(".abilities-block",
-        format(attrs.ability_modifiers, "str"),
-        format(attrs.ability_modifiers, "dex"),
-        format(attrs.ability_modifiers, "con"),
-        format(attrs.ability_modifiers, "int"),
-        format(attrs.ability_modifiers, "wis"),
-        format(attrs.ability_modifiers, "cha"),
-      )
-    }
-  }
-}
-
-const HitPointComponent: m.Component<{ sb: StatBlock }> = {
-  view({ attrs }) {
-    const { hit_points, hit_die } = attrs.sb
-
-    return m(".property-line.hit-points", [
-      m("b", "Hit Points"),
-      ": ",
-      `${hit_points} (${hit_die[0]}${hit_die[1]} + ${hit_die[2]})`
-    ])
-  }
-}
-
-
-const ChallengeRatingComponent: m.Component<{ sb: StatBlock }> = {
-  view({ attrs }) {
-    return m(".property-line.challenge",
-      m("b", "Challenge"),
-      ": ",
-      attrs.sb.challenge_rating, " ( ", attrs.sb.experience, " ) "
+    return m(el.ability_modifiers,
+      { key: mod },
+      m(el.ability_modifier_stat, mod),
+      m(el.ability_modifier_score, formatAbilityScore(score)),
     )
   }
 }
 
-const DamagePerActionComponent: m.Comp<{ sb: StatBlock }> = {
-  view({ attrs }) {
-    return m(".property-line.damage-per-turn",
-      m("b", "Damage per Action"),
+const BaseProperty: m.Component = {
+  view({ children }) {
+    const title = children[0]
+    const value = slice(1, Infinity, children as Array<string>)
+    return m(el.property_line,
+      m("b", title),
       ": ",
-      attrs.sb.damage_per_action,
+      ...value
     )
   }
 }
 
-const SpeedComponent: m.Component<{ sb: StatBlock }> = {
-  view({ attrs }) {
-    return m(".property-line.speed",
-      m("b", "Speed"), ": ",
-      attrs.sb.speed + "ft",
-    )
-  }
-}
-
-const ArmorClassComponent: m.Component<{ sb: StatBlock }> = {
-  view({ attrs }) {
-    return m(".base-property",
-      m("b", "Armor Class"),
-      ": ",
-      attrs.sb.armor_class,
+const AttackComponent: m.Component<{ attack: model.Attack }> = {
+  view({ attrs: { attack } }) {
+    const dmg = model.attackDamage(attack)
+    return m(".attack-form", { key: attack.id },
+      m(el.input, {
+        name: "attack",
+        placeholder: "name",
+        value: attack.name,
+        onchange(e: Event) {
+          model.state.setAttack({
+            ...attack,
+            name: e.target['value'],
+          })
+        }
+      }),
+      m(el.input, {
+        name: "description",
+        placeholder: "description",
+        value: attack.description,
+        onchange(e: Event) {
+          model.state.setAttack({
+            ...attack,
+            description: e.target['value'],
+          })
+        },
+      }),
+      m(SelectComponent, {
+        name: "die_num",
+        current: attack.die_num,
+        choices: range(1, 21).map(String),
+        onchange(die_num) {
+          model.state.setAttack({
+            ...attack,
+            die_num: parseInt(die_num),
+          })
+        }
+      }),
+      m(SelectComponent, {
+        name: "die",
+        current: attack.die,
+        choices: tables.dies,
+        onchange(die) {
+          model.state.setAttack({
+            ...attack,
+            die,
+          })
+        }
+      }),
+      m(SelectComponent, {
+        name: "mod",
+        current: attack.mod.toString(),
+        choices: range(0, 61).map(String),
+        onchange(mod) {
+          model.state.setAttack({
+            ...attack,
+            mod: parseInt(mod),
+          })
+        }
+      }),
+      m(SelectComponent, {
+        name: "type",
+        current: attack.type,
+        choices: tables.damage_types,
+        onchange(type) {
+          model.state.setAttack({
+            ...attack,
+            type,
+          })
+        }
+      }),
+      m(el.table,
+        m(el.table_row, m(el.table_cell, "max: "), m(el.table_cell, dmg.max)),
+        m(el.table_row, m(el.table_cell, "avg: "), m(el.table_cell, dmg.avg)),
+        m(el.table_row, m(el.table_cell, "min: "), m(el.table_cell, dmg.min)),
+      ),
+      m(el.remove, {
+        onclick() {
+          model.state.removeAttack(attack)
+        }
+      }, "x")
     )
   }
 }
 
 const PropertyLines: m.Component = {
   view() {
-    return m(".property-lines", [
-      m(".property-line.damage-immunities", [
+    return [
+      m(el.property_line,
         m(SelectTagComponent, {
-          title: "Damage Immunities",
+          label: "Damage Immunities",
           name: "damage-immunities",
           choices: tables.damage_types,
           selected: state.current.properties.damage_immunities || [],
@@ -275,11 +371,11 @@ const PropertyLines: m.Component = {
             state.set({ properties: { damage_immunities: val } })
           },
         }),
-      ]),
+      ),
 
-      m(".property-line.damage-resistances", [
+      m(el.property_line,
         m(SelectTagComponent, {
-          title: "Damage Resistances",
+          label: "Damage Resistances",
           name: "senses",
           choices: tables.damage_types,
           selected: state.current.properties.damage_resistances || [],
@@ -287,11 +383,11 @@ const PropertyLines: m.Component = {
             state.set({ properties: { damage_resistances: val } })
           },
         }),
-      ]),
+      ),
 
-      m(".property-line.damage-weaknesses",
+      m(el.property_line,
         m(SelectTagComponent, {
-          title: "Damage Weaknesses",
+          label: "Damage Weaknesses",
           name: "damage-weaknesses",
           choices: tables.damage_types,
           selected: state.current.properties.damage_weaknesses || [],
@@ -301,9 +397,9 @@ const PropertyLines: m.Component = {
         })
       ),
 
-      m(".property-line.condition-immunities",
+      m(el.property_line,
         m(SelectTagComponent, {
-          title: "Condition Immunities",
+          label: "Condition Immunities",
           name: "condition-immunities",
           choices: tables.conditions,
           selected: state.current.properties.condition_immunities || [],
@@ -313,9 +409,9 @@ const PropertyLines: m.Component = {
         })
       ),
 
-      m(".property-line.condition-weaknesses",
+      m(el.property_line,
         m(SelectTagComponent, {
-          title: "Condition Weaknesses",
+          label: "Condition Weaknesses",
           name: "condition-weaknesses",
           choices: tables.conditions,
           selected: state.current.properties.condition_weaknesses || [],
@@ -325,9 +421,9 @@ const PropertyLines: m.Component = {
         })
       ),
 
-      m(".property-line.senses", [
+      m(el.property_line,
         m(SelectTagComponent, {
-          title: "Senses",
+          label: "Senses",
           name: "senses",
           choices: tables.special_senses,
           selected: state.current.properties.special_senses || [],
@@ -335,11 +431,11 @@ const PropertyLines: m.Component = {
             state.set({ properties: { special_senses: val } })
           },
         })
-      ]),
+      ),
 
-      m(".property-line.languages", [
+      m(el.property_line,
         m(SelectTagComponent, {
-          title: "Languages",
+          label: "Languages",
           name: "languages",
           choices: tables.languages,
           selected: state.current.properties.languages || [],
@@ -347,34 +443,27 @@ const PropertyLines: m.Component = {
             state.current.properties.languages = val
           }
         })
-      ]),
-    ])
+      ),
+    ]
   }
 }
 
-const ActionsBlock: m.Component = {
-  view() {
+const ActionsBlock: m.Component<{ sb: StatBlock }> = {
+  view({ attrs: { sb } }) {
     return m(".actions", [
       m("h3", "Actions"),
 
-      m("hr"),
+      m(el.hr),
 
-      m(".property-block.attack", [
-        m("b", "Multiattack"),
-        "Describe multiattack?",
-      ]),
+      sb.attacks.map((attack) => {
+        return m(AttackComponent, { attack })
+      }),
 
-      m("hr"),
-
-      m(".property-block.attack", [
-        m("b", "Slam"),
-        m("p", [
-          m("i", "Slams the ground with his fists"),
-          "+4 to hit, reach 5ft, one target.",
-          m("i", "Hit:"),
-          "5 (1d6 + 2) bludgeoning damage.",
-        ]),
-      ]),
+      m("button[name=new-attack]", {
+        onclick() {
+          model.state.newAttack()
+        }
+      }, "+"),
     ])
   }
 }
@@ -382,6 +471,18 @@ const ActionsBlock: m.Component = {
 const SimpleCreatureJSON: m.Component = {
   view() {
     return m(".actions",
+
+      m("button", {
+        onclick(e: Event) {
+          e.preventDefault()
+          state.saveToCompendium(state.current)
+        }
+      }, "save to compendium"),
+
+      m("input[type=text]", {
+        value: JSON.stringify(state.current),
+      }),
+
       m("button", {
         onclick(e: Event) {
           e.preventDefault()
@@ -389,129 +490,135 @@ const SimpleCreatureJSON: m.Component = {
           navigator.clipboard.writeText(copyText)
         }
       }, "copy json to clipboard"),
-      m("button", {
-        onclick(e: Event) {
-          e.preventDefault()
-          state.saveToCompendium(state.current)
-        }
-      }, "save to compendium"),
-      m("textarea", { value: JSON.stringify(state.current) })
     )
   }
 }
 
 const StatBlockComponent: m.Component = {
-  oninit() {
-    state.setup()
-  },
-
   view() {
-    return m(".stat-block", [
-      m(".crc", state.current.uid),
-      m("hr"),
-      m("div.stat-block", [
-        m(".creature-heading", [
-          m("h1", m(NameEditorComponent)),
+    return m(".stat-block",
+      m(el.crc, state.current.uid),
+      m(el.hr),
+      m(el.name_editor, m(NameEditorComponent)),
 
-          m("p.tags", [
-            m("span.level", ["lvl ", m(SelectLevelComponent)]),
+      m(el.property_line,
+        m("span.level", "lvl ", m(SelectLevelComponent)),
 
-            m("span.role", m(SelectComponent, {
-              name: "role",
-              onchange(val: string) { state.set({ role: val as tables.RoleName }) },
-              current: state.current.role,
-              choices: keys(tables.roles),
-            })),
+        m(SelectComponent, {
+          name: "role",
+          label: "Role",
+          onchange(val: string) { state.set({ role: val as tables.Role }) },
+          current: state.current.role,
+          choices: keys(tables.roles),
+        }),
 
-            m("span.modifier", m(SelectComponent, {
-              name: "modifier",
-              onchange(val: string) { state.set({ modifier: val as tables.ModifierName }) },
-              current: state.current.modifier,
-              choices: keys(tables.modifiers),
-            })),
+        m(SelectComponent, {
+          name: "modifier",
+          label: "Modifier",
+          onchange(val: string) { state.set({ modifier: val as tables.Modifier }) },
+          current: state.current.modifier,
+          choices: keys(tables.modifiers),
+        }),
 
-            m("span.size", m(SelectComponent, {
-              name: "size",
-              onchange(val: string) { state.set({ size: val }) },
-              current: state.current.size,
-              choices: tables.sizes,
-            })),
+        m(SelectComponent, {
+          name: "size",
+          label: "Size",
+          onchange(val: string) { state.set({ size: val }) },
+          current: state.current.size,
+          choices: tables.sizes,
+        }),
 
-            m("span.category", m(SelectComponent, {
-              name: "category",
-              onchange(val: string) { state.set({ category: val }) },
-              current: state.current.category,
-              choices: tables.categories,
-            })),
+        m(SelectComponent, {
+          name: "category",
+          label: "Category",
+          onchange(val: string) { state.set({ category: val }) },
+          current: state.current.category,
+          choices: tables.categories,
+        }),
 
-            m("span.alignment", m(SelectComponent, {
-              name: "alignment",
-              onchange(val: string) { state.set({ alignment: val }) },
-              current: state.current.alignment,
-              choices: tables.alignments,
-            })),
-          ]),
-        ]),
-        m("hr"),
-        m(".base-properties", [
-          m(ArmorClassComponent, { sb: state.current }),
-          m(HitPointComponent, { sb: state.current }),
-          m(SpeedComponent, { sb: state.current }),
-          m(ChallengeRatingComponent, { sb: state.current }),
-          m(DamagePerActionComponent, { sb: state.current }),
-        ]),
-        m("hr"),
-        m(AbilitiesBlockComponent(), { ability_modifiers: state.current.ability_modifiers }),
-        m("hr"),
-        m(PropertyLines),
-        m("hr"),
-        m(ActionsBlock),
-      ]),
+        m(SelectComponent, {
+          name: "alignment",
+          label: "Alignment",
+          onchange(val: string) { state.set({ alignment: val }) },
+          current: state.current.alignment,
+          choices: tables.alignments,
+        }),
+      ),
 
+      m(el.hr),
+
+      m(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `),
+      m(BaseProperty, "Armor Class", state.current.armor_class),
+      m(BaseProperty, "Speed", state.current.speed, "ft"),
+      m(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "),
+
+      m(BaseProperty,
+        "Damage per Action",
+        state.current.damage_per_action,
+      ),
+      m(el.hr),
+      m(el.abilities_block,
+        map((mod) => m(AbilityModifierComponent, { mod }),
+          ["str", "dex", "con", "int", "wis", "cha"]),
+      ),
+
+      m(el.hr),
+      m(PropertyLines),
+
+      m(el.hr),
+      m(ActionsBlock, { sb: state.current }),
+
+      m(el.hr),
       m(SimpleCreatureJSON),
-    ])
+    )
   },
 }
 
-const SimpleMonsterCompendium: m.Comp = {
+const SimpleCreatureCompendium: m.Comp = {
   oninit() {
     state.loadCreatureCompendium()
   },
   view() {
-    return m("div.monster-list",
+    return m(el.compendium,
       m("h1", "List of creatures"),
 
-      m(".compendium",
-        m(".header",
-          m("span.label", "uid"),
-          m("span.label", "name"),
-          m("span.label", "level"),
-          m("span.label", "role"),
-          m("span.label", "modifier"),
+      m(el.compendium,
+        m(el.compendium_header + style.light_bg,
+          m(el.compendium_cell, "uid"),
+          m(el.compendium_cell, "name"),
+          m(el.compendium_cell, "level"),
+          m(el.compendium_cell, "role"),
+          m(el.compendium_cell, "modifier"),
         ),
-        map((creature: StatBlock) => m(".creature", {
-          key: creature.uid,
-          onclick() {
-            state.current = creature
-          }
-        },
-          m("span.uid", creature.uid),
-          m("span.name", creature.name),
-          m("span.level", creature.level),
-          m("span.role", creature.role),
-          m("span.modifier", creature.modifier),
-          m("span.delete", { onclick() { state.deleteFromCompendium(creature.uid) } }, "x")
-        ), values(state.list)))
+        map((creature: StatBlock) =>
+          m(el.compendium_row + style.hilight_bg, {
+            key: creature.uid,
+            onclick() {
+              state.current = creature
+            }
+          },
+            m(el.compendium_cell, creature.uid),
+            m(el.compendium_cell, creature.name),
+            m(el.compendium_cell, creature.level),
+            m(el.compendium_cell, creature.role),
+            m(el.compendium_cell, creature.modifier),
+            m(el.compendium_cell + style.remove, { onclick() { state.deleteFromCompendium(creature.uid) } }, "x")
+          ),
+          values(state.list)))
     )
   }
 }
 
 export const Ui = {
-  oninit: state.setup,
+  oninit: state.init,
   view() {
-    return m(".little-monster-maker", [
+    return m(".little-creature-maker" + b`
+      ff Quattrocento, sans-serif
+      fs 1.0rem
+      lh 1.6rem
+    `, [
       m(StatBlockComponent),
-      m(SimpleMonsterCompendium),
+      m(SimpleCreatureCompendium),
     ])
   },
 }

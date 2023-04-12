@@ -1451,21 +1451,21 @@
 		return build$1;
 	}
 
-	var assign;
+	var assign$1;
 	var hasRequiredAssign;
 
 	function requireAssign () {
-		if (hasRequiredAssign) return assign;
+		if (hasRequiredAssign) return assign$1;
 		hasRequiredAssign = 1;
 
 		var hasOwn = hasOwn$2;
 
-		assign = Object.assign || function(target, source) {
+		assign$1 = Object.assign || function(target, source) {
 			for (var key in source) {
 				if (hasOwn.call(source, key)) target[key] = source[key];
 			}
 		};
-		return assign;
+		return assign$1;
 	}
 
 	var build;
@@ -1742,11 +1742,11 @@
 
 	var request$1 = request$2(typeof window !== "undefined" ? window : null, PromisePolyfill, mountRedraw$1.redraw);
 
-	var parse$1;
+	var parse$2;
 	var hasRequiredParse$1;
 
 	function requireParse$1 () {
-		if (hasRequiredParse$1) return parse$1;
+		if (hasRequiredParse$1) return parse$2;
 		hasRequiredParse$1 = 1;
 
 		function decodeURIComponentSave(str) {
@@ -1757,7 +1757,7 @@
 			}
 		}
 
-		parse$1 = function(string) {
+		parse$2 = function(string) {
 			if (string === "" || string == null) return {}
 			if (string.charAt(0) === "?") string = string.slice(1);
 
@@ -1798,20 +1798,20 @@
 			}
 			return data
 		};
-		return parse$1;
+		return parse$2;
 	}
 
-	var parse;
+	var parse$1;
 	var hasRequiredParse;
 
 	function requireParse () {
-		if (hasRequiredParse) return parse;
+		if (hasRequiredParse) return parse$1;
 		hasRequiredParse = 1;
 
 		var parseQueryString = requireParse$1();
 
 		// Returns `{path, params}` from `url`
-		parse = function(url) {
+		parse$1 = function(url) {
 			var queryIndex = url.indexOf("?");
 			var hashIndex = url.indexOf("#");
 			var queryEnd = hashIndex < 0 ? url.length : hashIndex;
@@ -1830,7 +1830,7 @@
 					: parseQueryString(url.slice(queryIndex + 1, queryEnd)),
 			}
 		};
-		return parse;
+		return parse$1;
 	}
 
 	var compileTemplate;
@@ -2263,6 +2263,662 @@
 
 	var mithril = m;
 
+	var pseudos = [
+	  ':active',
+	  ':any',
+	  ':checked',
+	  ':default',
+	  ':disabled',
+	  ':empty',
+	  ':enabled',
+	  ':first',
+	  ':first-child',
+	  ':first-of-type',
+	  ':fullscreen',
+	  ':focus',
+	  ':hover',
+	  ':indeterminate',
+	  ':in-range',
+	  ':invalid',
+	  ':last-child',
+	  ':last-of-type',
+	  ':left',
+	  ':link',
+	  ':only-child',
+	  ':only-of-type',
+	  ':optional',
+	  ':out-of-range',
+	  ':read-only',
+	  ':read-write',
+	  ':required',
+	  ':right',
+	  ':root',
+	  ':scope',
+	  ':target',
+	  ':valid',
+	  ':visited',
+
+	  // With value
+	  ':dir',
+	  ':lang',
+	  ':not',
+	  ':nth-child',
+	  ':nth-last-child',
+	  ':nth-last-of-type',
+	  ':nth-of-type',
+
+	  // Elements
+	  '::after',
+	  '::before',
+	  '::first-letter',
+	  '::first-line',
+	  '::selection',
+	  '::backdrop',
+	  '::placeholder',
+	  '::marker',
+	  '::spelling-error',
+	  '::grammar-error'
+	];
+
+	var popular = {
+	  ai : 'alignItems',
+	  b  : 'bottom',
+	  bc : 'backgroundColor',
+	  br : 'borderRadius',
+	  bs : 'boxShadow',
+	  bi : 'backgroundImage',
+	  c  : 'color',
+	  d  : 'display',
+	  f  : 'float',
+	  fd : 'flexDirection',
+	  ff : 'fontFamily',
+	  fs : 'fontSize',
+	  h  : 'height',
+	  jc : 'justifyContent',
+	  l  : 'left',
+	  lh : 'lineHeight',
+	  ls : 'letterSpacing',
+	  m  : 'margin',
+	  mb : 'marginBottom',
+	  ml : 'marginLeft',
+	  mr : 'marginRight',
+	  mt : 'marginTop',
+	  o  : 'opacity',
+	  p  : 'padding',
+	  pb : 'paddingBottom',
+	  pl : 'paddingLeft',
+	  pr : 'paddingRight',
+	  pt : 'paddingTop',
+	  r  : 'right',
+	  t  : 'top',
+	  ta : 'textAlign',
+	  td : 'textDecoration',
+	  tt : 'textTransform',
+	  w  : 'width'
+	};
+
+	var cssProperties = ['float'].concat(Object.keys(
+	  typeof document === 'undefined'
+	    ? {}
+	    : findWidth(document.documentElement.style)
+	).filter(function (p) { return p.indexOf('-') === -1 && p !== 'length'; }));
+
+	function findWidth(obj) {
+	  return obj
+	    ? obj.hasOwnProperty('width')
+	      ? obj
+	      : findWidth(Object.getPrototypeOf(obj))
+	    : {}
+	}
+
+	var isProp = /^-?-?[a-z][a-z-_0-9]*$/i;
+
+	var memoize = function (fn, cache) {
+	  if ( cache === void 0 ) cache = {};
+
+	  return function (item) { return item in cache
+	    ? cache[item]
+	    : cache[item] = fn(item); };
+	};
+
+	function add(style, prop, values) {
+	  if (prop in style) // Recursively increase specificity
+	    { add(style, '!' + prop, values); }
+	  else
+	    { style[prop] = formatValues(prop, values); }
+	}
+
+	var vendorMap = Object.create(null, {});
+	var vendorValuePrefix = Object.create(null, {});
+
+	var vendorRegex = /^(o|O|ms|MS|Ms|moz|Moz|webkit|Webkit|WebKit)([A-Z])/;
+
+	var appendPx = memoize(function (prop) {
+	  var el = document.createElement('div');
+
+	  try {
+	    el.style[prop] = '1px';
+	    el.style.setProperty(prop, '1px');
+	    return el.style[prop].slice(-3) === '1px' ? 'px' : ''
+	  } catch (err) {
+	    return ''
+	  }
+	}, {
+	  flex: '',
+	  boxShadow: 'px',
+	  border: 'px',
+	  borderTop: 'px',
+	  borderRight: 'px',
+	  borderBottom: 'px',
+	  borderLeft: 'px'
+	});
+
+	function lowercaseFirst(string) {
+	  return string.charAt(0).toLowerCase() + string.slice(1)
+	}
+
+	function assign(obj, obj2) {
+	  for (var key in obj2) {
+	    if (obj2.hasOwnProperty(key)) {
+	      obj[key] = typeof obj2[key] === 'string'
+	        ? obj2[key]
+	        : assign(obj[key] || {}, obj2[key]);
+	    }
+	  }
+	  return obj
+	}
+
+	var hyphenSeparator = /-([a-z])/g;
+	function hyphenToCamelCase(hyphen) {
+	  return hyphen.slice(hyphen.charAt(0) === '-' ? 1 : 0).replace(hyphenSeparator, function(match) {
+	    return match[1].toUpperCase()
+	  })
+	}
+
+	var camelSeparator = /(\B[A-Z])/g;
+	function camelCaseToHyphen(camelCase) {
+	  return camelCase.replace(camelSeparator, '-$1').toLowerCase()
+	}
+
+	var initialMatch = /([A-Z])/g;
+	function initials(camelCase) {
+	  return camelCase.charAt(0) + (camelCase.match(initialMatch) || []).join('').toLowerCase()
+	}
+
+	var ampersandMatch = /&/g;
+	function objectToRules(style, selector, suffix, single) {
+	  if ( suffix === void 0 ) suffix = '';
+
+	  var base = {};
+	  var extra = suffix.indexOf('&') > -1 && suffix.indexOf(',') === -1 ? '' : '&';
+	  var rules = [];
+
+	  Object.keys(style).forEach(function (prop) {
+	    if (prop.charAt(0) === '@')
+	      { rules.push(prop + '{' + objectToRules(style[prop], selector, suffix, single).join('') + '}'); }
+	    else if (typeof style[prop] === 'object')
+	      { rules = rules.concat(objectToRules(style[prop], selector, suffix + prop, single)); }
+	    else
+	      { base[prop] = style[prop]; }
+	  });
+
+	  if (Object.keys(base).length) {
+	    rules.unshift(
+	      ((single || (suffix.charAt(0) === ' ') ? '' : '&') + extra + suffix).replace(ampersandMatch, selector).trim() +
+	      '{' + stylesToCss(base) + '}'
+	    );
+	  }
+
+	  return rules
+	}
+
+	var selectorSplit = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+
+	function stylesToCss(style) {
+	  return Object.keys(style).reduce(function (acc, prop) { return acc + propToString(prop.charAt(0) === '!' ? prop.slice(1) : prop, style[prop]); }
+	  , '')
+	}
+
+	function propToString(prop, value) {
+	  prop = prop in vendorMap ? vendorMap[prop] : prop;
+	  return (vendorRegex.test(prop) ? '-' : '')
+	    + (cssVar(prop)
+	      ? prop
+	      : camelCaseToHyphen(prop)
+	    )
+	    + ':'
+	    + value
+	    + ';'
+	}
+
+	function formatValues(prop, value) {
+	  return Array.isArray(value)
+	    ? value.map(function (v) { return formatValue(prop, v); }).join(' ')
+	    : typeof value === 'string'
+	      ? formatValues(prop, value.split(' '))
+	      : formatValue(prop, value)
+	}
+
+	function formatValue(prop, value) {
+	  return value in vendorValuePrefix
+	    ? vendorValuePrefix[value]
+	    : value + (isNaN(value) || value === null || value === 0 || value === '0' || typeof value === 'boolean' || cssVar(prop) ? '' : appendPx(prop))
+	}
+
+	function cssVar(prop) {
+	  return prop.charAt(0) === '-' && prop.charAt(1) === '-'
+	}
+
+	var classPrefix = 'b' + ('000' + ((Math.random() * 46656) | 0).toString(36)).slice(-3) +
+	                    ('000' + ((Math.random() * 46656) | 0).toString(36)).slice(-3);
+
+	var styleSheet = typeof document === 'object' && document.createElement('style');
+	styleSheet && document.head && document.head.appendChild(styleSheet);
+	styleSheet && (styleSheet.id = classPrefix);
+
+	var sheet = styleSheet && styleSheet.sheet;
+
+	var debug = false;
+	var classes = Object.create(null, {});
+	var rules = [];
+	var count = 0;
+
+	function setDebug(d) {
+	  debug = d;
+	}
+
+	function getSheet() {
+	  var content = rules.join('');
+	  rules = [];
+	  classes = Object.create(null, {});
+	  count = 0;
+	  return content
+	}
+
+	function getRules() {
+	  return rules
+	}
+
+	function insert(rule, index) {
+	  rules.push(rule);
+
+	  if (debug)
+	    { return styleSheet.textContent = rules.join('\n') }
+
+	  try {
+	    sheet && sheet.insertRule(rule, arguments.length > 1
+	      ? index
+	      : sheet.cssRules.length);
+	  } catch (e) {
+	    // Ignore thrown errors in eg. firefox for unsupported strings (::-webkit-inner-spin-button)
+	  }
+	}
+
+	function createClass(style) {
+	  var json = JSON.stringify(style);
+
+	  if (json in classes)
+	    { return classes[json] }
+
+	  var className = classPrefix + (++count)
+	      , rules = objectToRules(style, '.' + className);
+
+	  for (var i = 0; i < rules.length; i++)
+	    { insert(rules[i]); }
+
+	  classes[json] = className;
+
+	  return className
+	}
+
+	/* eslint no-invalid-this: 0 */
+
+	var shorts = Object.create(null);
+
+	function bss(input, value) {
+	  var b = chain(bss);
+	  input && assign(b.__style, parse.apply(null, arguments));
+	  return b
+	}
+
+	function setProp(prop, value) {
+	  Object.defineProperty(bss, prop, {
+	    configurable: true,
+	    value: value
+	  });
+	}
+
+	Object.defineProperties(bss, {
+	  __style: {
+	    configurable: true,
+	    writable: true,
+	    value: {}
+	  },
+	  valueOf: {
+	    configurable: true,
+	    writable: true,
+	    value: function() {
+	      return '.' + this.class
+	    }
+	  },
+	  toString: {
+	    configurable: true,
+	    writable: true,
+	    value: function() {
+	      return this.class
+	    }
+	  }
+	});
+
+	setProp('setDebug', setDebug);
+
+	setProp('$keyframes', keyframes);
+	setProp('$media', $media);
+	setProp('$import', $import);
+	setProp('$nest', $nest);
+	setProp('getSheet', getSheet);
+	setProp('getRules', getRules);
+	setProp('helper', helper);
+	setProp('css', css);
+	setProp('classPrefix', classPrefix);
+
+	function chain(instance) {
+	  var newInstance = Object.create(bss, {
+	    __style: {
+	      value: assign({}, instance.__style)
+	    },
+	    style: {
+	      enumerable: true,
+	      get: function() {
+	        var this$1$1 = this;
+
+	        return Object.keys(this.__style).reduce(function (acc, key) {
+	          if (typeof this$1$1.__style[key] === 'number' || typeof this$1$1.__style[key] === 'string')
+	            { acc[key.charAt(0) === '!' ? key.slice(1) : key] = this$1$1.__style[key]; }
+	          return acc
+	        }, {})
+	      }
+	    }
+	  });
+
+	  if (instance === bss)
+	    { bss.__style = {}; }
+
+	  return newInstance
+	}
+
+	cssProperties.forEach(function (prop) {
+	  var vendor = prop.match(vendorRegex);
+	  if (vendor) {
+	    var unprefixed = lowercaseFirst(prop.replace(vendorRegex, '$2'));
+	    if (cssProperties.indexOf(unprefixed) === -1) {
+	      if (unprefixed === 'flexDirection')
+	        { vendorValuePrefix.flex = '-' + vendor[1].toLowerCase() + '-flex'; }
+
+	      vendorMap[unprefixed] = prop;
+	      setProp(unprefixed, setter(prop));
+	      setProp(short(unprefixed), bss[unprefixed]);
+	      return
+	    }
+	  }
+
+	  setProp(prop, setter(prop));
+	  setProp(short(prop), bss[prop]);
+	});
+
+	setProp('content', function Content(arg) {
+	  var b = chain(this);
+	  arg === null || arg === undefined || arg === false
+	    ? delete b.__style.content
+	    : b.__style.content = '"' + arg + '"';
+	  return b
+	});
+
+	Object.defineProperty(bss, 'class', {
+	  set: function(value) {
+	    this.__class = value;
+	  },
+	  get: function() {
+	    return this.__class || createClass(this.__style)
+	  }
+	});
+
+	function $media(value, style) {
+	  var b = chain(this);
+	  if (value)
+	    { b.__style['@media ' + value] = parse(style); }
+
+	  return b
+	}
+
+	var hasUrl = /^('|"|url\('|url\(")/i;
+	function $import(value) {
+	  value && insert('@import '
+	    + (hasUrl.test(value) ? value : '"' + value + '"')
+	    + ';', 0);
+
+	  return chain(this)
+	}
+
+	function $nest(selector, properties) {
+	  var b = chain(this);
+	  if (arguments.length === 1)
+	    { Object.keys(selector).forEach(function (x) { return addNest(b.__style, x, selector[x]); }); }
+	  else if (selector)
+	    { addNest(b.__style, selector, properties); }
+
+	  return b
+	}
+
+	function addNest(style, selector, properties) {
+	  var prop = selector.split(selectorSplit).map(function (x) {
+	    x = x.trim();
+	    return (x.charAt(0) === ':' || x.charAt(0) === '[' ? '' : ' ') + x
+	  }).join(',&');
+
+	  prop in style
+	    ? assign(style[prop], parse(properties))
+	    : style[prop] = parse(properties);
+	}
+
+	pseudos.forEach(function (name) { return setProp('$' + hyphenToCamelCase(name.replace(/:/g, '')), function Pseudo(value, style) {
+	    var b = chain(this);
+	    if (isTagged(value))
+	      { b.__style[name] = parse.apply(null, arguments); }
+	    else if (value || style)
+	      { b.__style[name + (style ? '(' + value + ')' : '')] = parse(style || value); }
+	    return b
+	  }); }
+	);
+
+	function setter(prop) {
+	  return function CssProperty(value) {
+	    var b = chain(this);
+	    if (!value && value !== 0)
+	      { delete b.__style[prop]; }
+	    else if (arguments.length > 0)
+	      { add(b.__style, prop, Array.prototype.slice.call(arguments)); }
+
+	    return b
+	  }
+	}
+
+	function css(selector, style) {
+	  if (arguments.length === 1)
+	    { Object.keys(selector).forEach(function (key) { return addCss(key, selector[key]); }); }
+	  else
+	    { addCss(selector, style); }
+
+	  return chain(this)
+	}
+
+	function addCss(selector, style) {
+	  objectToRules(parse(style), selector, '', true).forEach(function (rule) { return insert(rule); });
+	}
+
+	function helper(name, styling) {
+	  if (arguments.length === 1)
+	    { return Object.keys(name).forEach(function (key) { return helper(key, name[key]); }) }
+
+	  delete bss[name]; // Needed to avoid weird get calls in chrome
+
+	  if (typeof styling === 'function') {
+	    helper[name] = styling;
+	    Object.defineProperty(bss, name, {
+	      configurable: true,
+	      value: function Helper(input) {
+	        var b = chain(this);
+	        var result = isTagged(input)
+	          ? styling(raw(input, arguments))
+	          : styling.apply(null, arguments);
+	        assign(b.__style, result.__style);
+	        return b
+	      }
+	    });
+	  } else {
+	    helper[name] = parse(styling);
+	    Object.defineProperty(bss, name, {
+	      configurable: true,
+	      get: function() {
+	        var b = chain(this);
+	        assign(b.__style, parse(styling));
+	        return b
+	      }
+	    });
+	  }
+	}
+
+	bss.helper('$animate', function (value, props) { return bss.animation(bss.$keyframes(props) + ' ' + value); }
+	);
+
+	function short(prop) {
+	  var acronym = initials(prop)
+	      , short = popular[acronym] && popular[acronym] !== prop ? prop : acronym;
+
+	  shorts[short] = prop;
+	  return short
+	}
+
+	var blockEndMatch = /;(?![^("]*[)"])|\n/;
+	var commentsMatch = /\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*(?![^("]*[)"])/g;
+	var propSeperator = /[ :]+/;
+
+	var stringToObject = memoize(function (string) {
+	  var last = ''
+	    , prev;
+
+	  return string.trim().replace(commentsMatch, '').split(blockEndMatch).reduce(function (acc, line) {
+	    if (!line)
+	      { return acc }
+	    line = last + line.trim();
+	    var ref = line.replace(propSeperator, ' ').split(' ');
+	    var key = ref[0];
+	    var tokens = ref.slice(1);
+
+	    last = line.charAt(line.length - 1) === ',' ? line : '';
+	    if (last)
+	      { return acc }
+
+	    if (line.charAt(0) === ',' || !isProp.test(key)) {
+	      acc[prev] += ' ' + line;
+	      return acc
+	    }
+
+	    if (!key)
+	      { return acc }
+
+	    var prop = key.charAt(0) === '-' && key.charAt(1) === '-'
+	      ? key
+	      : hyphenToCamelCase(key);
+
+	    prev = shorts[prop] || prop;
+
+	    if (key in helper) {
+	      typeof helper[key] === 'function'
+	        ? assign(acc, helper[key].apply(helper, tokens).__style)
+	        : assign(acc, helper[key]);
+	    } else if (prop in helper) {
+	      typeof helper[prop] === 'function'
+	        ? assign(acc, helper[prop].apply(helper, tokens).__style)
+	        : assign(acc, helper[prop]);
+	    } else if (tokens.length > 0) {
+	      add(acc, prev, tokens);
+	    }
+
+	    return acc
+	  }, {})
+	});
+
+	var count$1 = 0;
+	var keyframeCache = {};
+
+	function keyframes(props) {
+	  var content = Object.keys(props).reduce(function (acc, key) { return acc + key + '{' + stylesToCss(parse(props[key])) + '}'; }
+	  , '');
+
+	  if (content in keyframeCache)
+	    { return keyframeCache[content] }
+
+	  var name = classPrefix + count$1++;
+	  keyframeCache[content] = name;
+	  insert('@keyframes ' + name + '{' + content + '}');
+
+	  return name
+	}
+
+	function parse(input, value) {
+	  var obj;
+
+	  if (typeof input === 'string') {
+	    if (typeof value === 'string' || typeof value === 'number')
+	      { return (( obj = {}, obj[input] = value, obj )) }
+
+	    return stringToObject(input)
+	  } else if (isTagged(input)) {
+	    return stringToObject(raw(input, arguments))
+	  }
+
+	  return input.__style || sanitize(input)
+	}
+
+	function isTagged(input) {
+	  return Array.isArray(input) && typeof input[0] === 'string'
+	}
+
+	function raw(input, args) {
+	  var str = '';
+	  for (var i = 0; i < input.length; i++)
+	    { str += input[i] + (args[i + 1] || args[i + 1] === 0 ? args[i + 1] : ''); }
+	  return str
+	}
+
+	function sanitize(styles) {
+	  return Object.keys(styles).reduce(function (acc, key) {
+	    var value = styles[key];
+	    key = shorts[key] || key;
+
+	    if (!value && value !== 0 && value !== '')
+	      { return acc }
+
+	    if (key === 'content' && value.charAt(0) !== '"')
+	      { acc[key] = '"' + value + '"'; }
+	    else if (typeof value === 'object')
+	      { acc[key] = sanitize(value); }
+	    else
+	      { add(acc, key, value); }
+
+	    return acc
+	  }, {})
+	}
+
+	function curry(fn, args = []){
+	  return (..._args) =>
+	    (rest => rest.length >= fn.length ? fn(...rest) : curry(fn, rest))([
+	      ...args,
+	      ..._args,
+	    ])
+	}
+
 	const { isArray } = Array;
 
 	function clone(input){
@@ -2389,6 +3045,14 @@
 
 	  return willReturn
 	}
+
+	function sliceFn(
+	  from, to, list
+	){
+	  return list.slice(from, to)
+	}
+
+	const slice = curry(sliceFn);
 
 	function values(obj){
 	  if (type(obj) !== 'Object') return []
@@ -3143,24 +3807,6 @@
 	        special: ["paragon", "phase_66", "phase_33"],
 	    },
 	};
-	const categories = [
-	    "aberration",
-	    "beast",
-	    "celestial",
-	    "construct",
-	    "dragon",
-	    "elemental",
-	    "fey",
-	    "fiend",
-	    "fiend (demon)",
-	    "fiend (devil)",
-	    "giant",
-	    "humanoid",
-	    "monstrosity",
-	    "ooze",
-	    "plant",
-	    "undead",
-	];
 	const HitDies = {
 	    small: "d4",
 	    medium: "d6",
@@ -3169,7 +3815,9 @@
 	    gargantuan: "d20",
 	};
 	const sizes = keys(HitDies);
-	const dies2hp = {
+	const dies_avg = {
+	    d2: 1,
+	    d3: 1.5,
 	    d4: 2.5,
 	    d6: 3.5,
 	    d8: 4.5,
@@ -3177,50 +3825,8 @@
 	    d12: 6.5,
 	    d20: 10.5,
 	};
-	const alignments = [
-	    "lawful",
-	    "lawful good",
-	    "lawful evil",
-	    "neutral",
-	    "neutral good",
-	    "neutral evil",
-	    "chaotic",
-	    "chaotic good",
-	    "chaotic evil",
-	    "unaligned",
-	];
-	const conditions = [
-	    "blinded",
-	    "charmed",
-	    "deafened",
-	    "exhaustion",
-	    "frightened",
-	    "grappled",
-	    "incapacitated",
-	    "invisible",
-	    "paralyzed",
-	    "petrified",
-	    "poisoned",
-	    "prone",
-	    "restrained",
-	    "stunned",
-	    "unconscious",
-	];
-	// https://www.5esrd.com/gamemastering/combat#Damage_Types
-	const damage_types = [
-	    "bludgeoning",
-	    "cold",
-	    "fire",
-	    "force",
-	    "lightning",
-	    "necrotic",
-	    "piercing",
-	    "poison",
-	    "psychic",
-	    "radiant",
-	    "slashing",
-	    "thunder",
-	];
+	const dies = keys(dies_avg);
+	dies.map((i) => i.replace(/[^\d]/, "")).map(parseInt);
 	const cr_exp = [
 	    { cr: "0", exp: 10 },
 	    { cr: "1/8", exp: 25 },
@@ -3283,6 +3889,68 @@
 	    "tremorsense",
 	    "truesight",
 	];
+	const categories = [
+	    "aberration",
+	    "beast",
+	    "celestial",
+	    "construct",
+	    "dragon",
+	    "elemental",
+	    "fey",
+	    "fiend",
+	    "fiend (demon)",
+	    "fiend (devil)",
+	    "giant",
+	    "humanoid",
+	    "monstrosity",
+	    "ooze",
+	    "plant",
+	    "undead",
+	];
+	const alignments = [
+	    "lawful",
+	    "lawful good",
+	    "lawful evil",
+	    "neutral",
+	    "neutral good",
+	    "neutral evil",
+	    "chaotic",
+	    "chaotic good",
+	    "chaotic evil",
+	    "unaligned",
+	];
+	const conditions = [
+	    "blinded",
+	    "charmed",
+	    "deafened",
+	    "exhaustion",
+	    "frightened",
+	    "grappled",
+	    "incapacitated",
+	    "invisible",
+	    "paralyzed",
+	    "petrified",
+	    "poisoned",
+	    "prone",
+	    "restrained",
+	    "stunned",
+	    "unconscious",
+	];
+	// https://www.5esrd.com/gamemastering/combat#Damage_Types
+	const damage_types = [
+	    "cold",
+	    "fire",
+	    "force",
+	    "lightning",
+	    "necrotic",
+	    "poison",
+	    "psychic",
+	    "radiant",
+	    "thunder",
+	    "bludgeoning",
+	    "piercing",
+	    "slashing",
+	];
 
 	function templateByLevel(lvl) {
 	    return levels.filter((i) => lvl == i.level)[0];
@@ -3296,7 +3964,7 @@
 	    const role = roles[opts.role];
 	    const modifier = modifiers[opts.modifier];
 	    const template = templateByLevel(opts.level);
-	    const saving_throws = map((s) => s + role.saving_throws + modifier.saving_throws, template.saving_throws);
+	    const saving_throws = template.saving_throws.map((s) => s + role.saving_throws + modifier.saving_throws);
 	    ({
 	        major: {
 	            stat: saving_throws[0],
@@ -3345,7 +4013,8 @@
 	        hit_points,
 	        attack_bonus: sump("attack_bonus", template, role, modifier),
 	        damage_per_action: mulp("damage_per_action", template, role, modifier),
-	        spell_dc: template.spell_dc.map((spell_dc) => spell_dc + modifier.spell_dc),
+	        spell_dc: template.spell_dc
+	            .map((spell_dc) => spell_dc + modifier.spell_dc),
 	        initiative: sum(template.proficiency_bonus, role.initiative, modifier.initiative),
 	        perception: sum(template.proficiency_bonus, role.perception, modifier.perception),
 	        stealth: sum(0, modifier.stealth),
@@ -3364,8 +4033,7 @@
 	 */
 	function calculateHitDie(sb) {
 	    let die = HitDies[sb.size];
-	    let estimate = dies2hp[die];
-	    // let target = sb.hit_points - base
+	    let estimate = dies_avg[die];
 	    let sway = Math.ceil((sb.hit_points / 100) * 15);
 	    let result = 0;
 	    let dies = 0;
@@ -3395,7 +4063,212 @@
 	function modToAbilityScore(mod) {
 	    return 10 + Math.floor(mod * 2);
 	}
+	function attackDamage(atk) {
+	    const mediumDmg = dies_avg[atk.die];
+	    const maxDie = parseInt(atk.die.replace(/[^\d]/, ""));
+	    return {
+	        min: atk.die_num + atk.mod,
+	        avg: mediumDmg * atk.die_num + atk.mod,
+	        max: maxDie * atk.die_num + atk.mod,
+	    };
+	}
+	const demo_creature = {
+	    name: "Creature",
+	    level: 0,
+	    role: "soldier",
+	    modifier: "normal",
+	    size: "small",
+	    attacks: [],
+	};
+	const state = {
+	    STORE_CURRENT_KEY: 'LMM_Current',
+	    STORE_COMPENDIUM_KEY: 'LMM_Compendium',
+	    list: {},
+	    current: demo_creature,
+	    init() {
+	        const data = JSON.parse(localStorage.getItem(state.STORE_CURRENT_KEY));
+	        if (!!data) {
+	            state.current = data;
+	        }
+	        state.update();
+	    },
+	    update() {
+	        state.current = createCreature(state.current);
+	        state.save();
+	    },
+	    save() {
+	        localStorage.setItem("current", JSON.stringify(state.current));
+	    },
+	    set(data) {
+	        state.current = mergeDeepRight(state.current, data);
+	        state.update();
+	    },
+	    loadCreatureCompendium() {
+	        const data = JSON.parse(localStorage.getItem(state.STORE_COMPENDIUM_KEY));
+	        state.list = data || {};
+	    },
+	    saveToCompendium(sb) {
+	        state.list[sb.uid] = sb;
+	        state.saveCompendium();
+	    },
+	    deleteFromCompendium(uid) {
+	        delete state.list[uid];
+	        state.saveCompendium();
+	    },
+	    saveCompendium() {
+	        localStorage.setItem(state.STORE_COMPENDIUM_KEY, JSON.stringify(state.list));
+	    },
+	    resetCompendium() {
+	        localStorage.setItem(state.STORE_COMPENDIUM_KEY, "{}");
+	    },
+	    newAttack() {
+	        const id = crc16(Math.random().toString());
+	        state.current.attacks.push({
+	            id,
+	            name: "",
+	            die_num: 1,
+	            description: "",
+	            die: "d4",
+	            type: "slashing",
+	            mod: 0,
+	        });
+	    },
+	    removeAttack(attack) {
+	        const attacks = state.current.attacks
+	            .filter((atk) => atk.id != attack.id);
+	        state.set({ attacks });
+	    },
+	    setAttack(atk) {
+	        const attacks = state.current.attacks
+	            .map((k) => (k.id == atk.id) ? atk : k);
+	        state.set({ attacks });
+	    },
+	};
 
+	const colors = {
+	    red: "rgb(125, 52, 37)",
+	    darkGrey: "rgb(32,32,32)",
+	    grey: "rgb(64,64,64)",
+	};
+	const style_base = {
+	    input: bss `
+    ff Quattrocento, serif
+    fs 1.2rem
+    lh 1.6rem
+    p 0.4rem 0.6rem
+    m 0.4rem 0.6rem
+    border 0
+    background-color: ${colors.darkGrey}
+    color rgb(230, 230, 230)
+    outline 0
+    border-bottom 2px dotted ${colors.red}
+  `.$hover `
+    bc ${colors.grey}
+  `,
+	    tags: bss `
+    d flex
+    flex-grow 3
+    padding-left 1rem
+    font-variant small-caps
+  `,
+	    tag: bss `
+    margin-left 1rem
+  `.$hover `
+    cursor pointer
+    color ${colors.red}
+  `,
+	    select: bss `
+    border-bottom: 2px dotted ${colors.red}
+  `,
+	    hr: bss `
+    bc rgba(0,0,0,0)
+    bi linear-gradient(90deg, ${colors.red} 0px, rgba(125, 52, 37, 0))
+    border 0
+    h 2px
+    m 1rem 0
+  `,
+	    remove: bss `
+    c rgb(125,52,37)
+    fw bolder
+    fs 1.2rem
+    p 0.4rem
+    cursor pointer
+  `.$hover `
+    c rgb(225,52,37)
+  `,
+	    table: bss `
+    d table
+    border-collapse collapse
+  `,
+	    table_header: bss `
+    font-style italic
+  `,
+	    table_row: bss `
+    d table-row
+    cursor pointer
+  `,
+	    table_cell: bss `
+    d table-cell
+    p 0.6rem
+  `,
+	    hilight_bg: bss `
+  `.$hover `
+    background-color ${colors.grey}
+  `,
+	    light_bg: bss `
+    background-color ${colors.grey}
+  `,
+	    small: bss `
+    fs 0.8rem
+    font-variant small-caps
+  `,
+	};
+	const style = Object.assign(Object.assign({}, style_base), { select: style_base.select + style_base.input, abilities_block: bss `
+    display flex
+    flex-direction row
+    justify-content center
+    align-items stretch
+    align-content center
+  `, ability_modifiers: bss `
+    display flex
+    flex-direction column
+    align-content center
+    text-align center
+    margin 0 0.8rem
+  `, ability_modifier_stat: bss `
+    fs 1.4rem
+    fw bolder
+    font-variant small-caps
+  `, ability_modifier_score: bss `
+    font-style italic
+  `.$hover `
+    b ${colors.grey}
+  ` });
+	const el = {
+	    input: "input" + style.input,
+	    tags: "span" + style.tags,
+	    tag: "span" + style.tag,
+	    select: "select" + style.select,
+	    hr: "hr" + style.hr,
+	    table: "table" + style.table,
+	    table_row: "tr" + style.table_row,
+	    table_cell: "td" + style.table_cell,
+	    // Component Elements
+	    crc: "div" + style.small,
+	    stat_block: "div",
+	    compendium: "table" + style.table,
+	    compendium_header: "thead" + style.table_row + style.light_bg,
+	    compendium_row: "tr" + style.table_row + style.hilight_bg,
+	    compendium_cell: "td" + style.table_cell,
+	    remove: "span" + style.remove,
+	    property_block: "div.property_block",
+	    property_line: "div.property_line",
+	    abilities_block: "div" + style.abilities_block,
+	    ability_modifiers: "div" + style.ability_modifiers,
+	    ability_modifier_stat: "span" + style.ability_modifier_stat,
+	    ability_modifier_score: "span" + style.ability_modifier_score,
+	    name_editor: "h1"
+	};
 	function formatModScore(mod) {
 	    if (mod < 0) {
 	        return " - " + Math.abs(mod);
@@ -3415,100 +4288,44 @@
 	        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
 	        .join(" ");
 	}
-	const state = {
-	    list: {},
-	    current: createCreature({
-	        level: 0,
-	        role: "soldier",
-	        modifier: "normal",
-	        name: "Naga",
-	        alignment: "chaotic evil",
-	        category: "fiend (demon)",
-	        size: "medium",
-	    }),
-	    setup() {
-	        const data = JSON.parse(localStorage.getItem("current"));
-	        if (data) {
-	            this.current = data;
-	        }
-	        state.update();
-	    },
-	    update() {
-	        this.current = createCreature(this.current);
-	        this.save();
-	    },
-	    save() {
-	        localStorage.setItem("current", JSON.stringify({
-	            level: state.current.level,
-	            role: state.current.role,
-	            modifier: state.current.modifier,
-	            name: state.current.name,
-	            size: state.current.size,
-	            alignment: state.current.alignment,
-	            category: state.current.category,
-	        }));
-	    },
-	    set(data) {
-	        state.current = mergeDeepRight(state.current, data);
-	        state.update();
-	    },
-	    loadCreatureCompendium() {
-	        const data = JSON.parse(localStorage.getItem("compendium"));
-	        this.list = data || {};
-	    },
-	    saveToCompendium(sb) {
-	        this.list[sb.uid] = sb;
-	        this.saveCompendium();
-	    },
-	    deleteFromCompendium(uid) {
-	        delete this.list[uid];
-	        this.saveCompendium();
-	    },
-	    saveCompendium() {
-	        localStorage.setItem("compendium", JSON.stringify(this.list));
-	    },
-	    resetCompendium() {
-	        localStorage.setItem("compendium", "{}");
-	    }
-	};
 	const SelectComponent = {
-	    view({ attrs }) {
-	        return mithril("select", {
-	            name: attrs.name,
+	    view({ attrs: { name, current, choices, onchange, preventDefault, label } }) {
+	        return mithril(el.select, {
+	            name,
 	            onchange(e) {
-	                if (attrs.preventDefault)
+	                if (preventDefault)
 	                    e.preventDefault();
-	                attrs.onchange(e.target.value);
+	                onchange(e.target.value);
 	            },
-	        }, ...map((choice) => mithril("option", {
+	        }, mithril("option", { key: -1, disabled: true, selected: current == "" }, label), ...choices.map((choice) => mithril("option", {
 	            key: choice,
 	            value: choice,
-	            selected: choice == attrs.current
-	        }, formatString(choice)), attrs.choices));
+	            selected: choice == current
+	        }, formatString(choice))));
 	    }
 	};
 	const SelectTagComponent = {
-	    view(vnode) {
-	        const { selected } = vnode.attrs;
-	        const items = vnode.attrs.choices
+	    view({ attrs: { label, name, choices, selected, onchange } }) {
+	        const items = choices
 	            .filter((i) => selected.indexOf(i) < 0);
 	        return [
-	            mithril("label", vnode.attrs.title, mithril(SelectComponent, {
-	                name: vnode.attrs.name,
+	            mithril(SelectComponent, {
+	                name,
+	                label,
 	                current: "",
-	                choices: ["", ...items],
+	                choices: [...items],
 	                onchange(val) {
-	                    vnode.attrs.onchange(selected.concat(val));
+	                    onchange(selected.concat(val));
 	                },
 	                preventDefault: true
-	            })),
-	            mithril(".tags", ...map((i) => mithril("span.tag", i, mithril("span.delete", {
+	            }),
+	            mithril(el.tags, ...map((i) => mithril(el.tag, {
 	                onclick(e) {
 	                    e.preventDefault();
 	                    const data = selected.filter(x => x !== i);
-	                    vnode.attrs.onchange(data);
+	                    onchange(data);
 	                }
-	            }, "x")), selected))
+	            }, i), selected))
 	        ];
 	    }
 	};
@@ -3526,7 +4343,8 @@
 	};
 	const NameEditorComponent = {
 	    view() {
-	        return mithril("input[type=text]", {
+	        return mithril(el.input, {
+	            type: "text",
 	            name: "name",
 	            value: state.current.name,
 	            onkeyup(e) {
@@ -3535,74 +4353,94 @@
 	        });
 	    }
 	};
-	function AbilitiesBlockComponent() {
-	    function format(abilities, mod) {
-	        let score = abilities[mod];
-	        return mithril(`.score.${mod}`, mithril("span.stat", mod), mithril("span.score", formatAbilityScore(score)));
-	    }
-	    return {
-	        view({ attrs }) {
-	            return mithril(".abilities-block", format(attrs.ability_modifiers, "str"), format(attrs.ability_modifiers, "dex"), format(attrs.ability_modifiers, "con"), format(attrs.ability_modifiers, "int"), format(attrs.ability_modifiers, "wis"), format(attrs.ability_modifiers, "cha"));
-	        }
-	    };
-	}
-	const HitPointComponent = {
-	    view({ attrs }) {
-	        const { hit_points, hit_die } = attrs.sb;
-	        return mithril(".property-line.hit-points", [
-	            mithril("b", "Hit Points"),
-	            ": ",
-	            `${hit_points} (${hit_die[0]}${hit_die[1]} + ${hit_die[2]})`
-	        ]);
+	const AbilityModifierComponent = {
+	    view({ attrs: { mod } }) {
+	        const score = state.current.ability_modifiers[mod];
+	        return mithril(el.ability_modifiers, { key: mod }, mithril(el.ability_modifier_stat, mod), mithril(el.ability_modifier_score, formatAbilityScore(score)));
 	    }
 	};
-	const ChallengeRatingComponent = {
-	    view({ attrs }) {
-	        return mithril(".property-line.challenge", mithril("b", "Challenge"), ": ", attrs.sb.challenge_rating, " ( ", attrs.sb.experience, " ) ");
+	const BaseProperty = {
+	    view({ children }) {
+	        const title = children[0];
+	        const value = slice(1, Infinity, children);
+	        return mithril(el.property_line, mithril("b", title), ": ", ...value);
 	    }
 	};
-	const DamagePerActionComponent = {
-	    view({ attrs }) {
-	        return mithril(".property-line.damage-per-turn", mithril("b", "Damage per Action"), ": ", attrs.sb.damage_per_action);
-	    }
-	};
-	const SpeedComponent = {
-	    view({ attrs }) {
-	        return mithril(".property-line.speed", mithril("b", "Speed"), ": ", attrs.sb.speed + "ft");
-	    }
-	};
-	const ArmorClassComponent = {
-	    view({ attrs }) {
-	        return mithril(".base-property", mithril("b", "Armor Class"), ": ", attrs.sb.armor_class);
+	const AttackComponent = {
+	    view({ attrs: { attack } }) {
+	        const dmg = attackDamage(attack);
+	        return mithril(".attack-form", { key: attack.id }, mithril(el.input, {
+	            name: "attack",
+	            placeholder: "name",
+	            value: attack.name,
+	            onchange(e) {
+	                state.setAttack(Object.assign(Object.assign({}, attack), { name: e.target['value'] }));
+	            }
+	        }), mithril(el.input, {
+	            name: "description",
+	            placeholder: "description",
+	            value: attack.description,
+	            onchange(e) {
+	                state.setAttack(Object.assign(Object.assign({}, attack), { description: e.target['value'] }));
+	            },
+	        }), mithril(SelectComponent, {
+	            name: "die_num",
+	            current: attack.die_num,
+	            choices: range(1, 21).map(String),
+	            onchange(die_num) {
+	                state.setAttack(Object.assign(Object.assign({}, attack), { die_num: parseInt(die_num) }));
+	            }
+	        }), mithril(SelectComponent, {
+	            name: "die",
+	            current: attack.die,
+	            choices: dies,
+	            onchange(die) {
+	                state.setAttack(Object.assign(Object.assign({}, attack), { die }));
+	            }
+	        }), mithril(SelectComponent, {
+	            name: "mod",
+	            current: attack.mod.toString(),
+	            choices: range(0, 61).map(String),
+	            onchange(mod) {
+	                state.setAttack(Object.assign(Object.assign({}, attack), { mod: parseInt(mod) }));
+	            }
+	        }), mithril(SelectComponent, {
+	            name: "type",
+	            current: attack.type,
+	            choices: damage_types,
+	            onchange(type) {
+	                state.setAttack(Object.assign(Object.assign({}, attack), { type }));
+	            }
+	        }), mithril(el.table, mithril(el.table_row, mithril(el.table_cell, "max: "), mithril(el.table_cell, dmg.max)), mithril(el.table_row, mithril(el.table_cell, "avg: "), mithril(el.table_cell, dmg.avg)), mithril(el.table_row, mithril(el.table_cell, "min: "), mithril(el.table_cell, dmg.min))), mithril(el.remove, {
+	            onclick() {
+	                state.removeAttack(attack);
+	            }
+	        }, "x"));
 	    }
 	};
 	const PropertyLines = {
 	    view() {
-	        return mithril(".property-lines", [
-	            mithril(".property-line.damage-immunities", [
-	                mithril(SelectTagComponent, {
-	                    title: "Damage Immunities",
-	                    name: "damage-immunities",
-	                    choices: damage_types,
-	                    selected: state.current.properties.damage_immunities || [],
-	                    onchange(val) {
-	                        state.set({ properties: { damage_immunities: val } });
-	                    },
-	                }),
-	            ]),
-	            mithril(".property-line.damage-resistances", [
-	                mithril(SelectTagComponent, {
-	                    title: "Damage Resistances",
-	                    name: "senses",
-	                    choices: damage_types,
-	                    selected: state.current.properties.damage_resistances || [],
-	                    onchange(val) {
-	                        state.set({ properties: { damage_resistances: val } });
-	                    },
-	                }),
-	            ]),
-	            mithril(".property-line.damage-weaknesses", mithril(SelectTagComponent, {
-	                title: "Damage Weaknesses",
+	        return [
+	            mithril(el.property_line, mithril(SelectTagComponent, {
+	                label: "Damage Immunities",
+	                name: "damage-immunities",
+	                choices: damage_types,
+	                selected: state.current.properties.damage_immunities || [],
+	                onchange(val) {
+	                    state.set({ properties: { damage_immunities: val } });
+	                },
+	            })),
+	            mithril(el.property_line, mithril(SelectTagComponent, {
+	                label: "Damage Resistances",
+	                name: "senses",
+	                choices: damage_types,
+	                selected: state.current.properties.damage_resistances || [],
+	                onchange(val) {
+	                    state.set({ properties: { damage_resistances: val } });
+	                },
+	            })),
+	            mithril(el.property_line, mithril(SelectTagComponent, {
+	                label: "Damage Weaknesses",
 	                name: "damage-weaknesses",
 	                choices: damage_types,
 	                selected: state.current.properties.damage_weaknesses || [],
@@ -3610,8 +4448,8 @@
 	                    state.set({ properties: { damage_weaknesses: val } });
 	                },
 	            })),
-	            mithril(".property-line.condition-immunities", mithril(SelectTagComponent, {
-	                title: "Condition Immunities",
+	            mithril(el.property_line, mithril(SelectTagComponent, {
+	                label: "Condition Immunities",
 	                name: "condition-immunities",
 	                choices: conditions,
 	                selected: state.current.properties.condition_immunities || [],
@@ -3619,8 +4457,8 @@
 	                    state.set({ properties: { condition_immunities: val } });
 	                },
 	            })),
-	            mithril(".property-line.condition-weaknesses", mithril(SelectTagComponent, {
-	                title: "Condition Weaknesses",
+	            mithril(el.property_line, mithril(SelectTagComponent, {
+	                label: "Condition Weaknesses",
 	                name: "condition-weaknesses",
 	                choices: conditions,
 	                selected: state.current.properties.condition_weaknesses || [],
@@ -3628,50 +4466,40 @@
 	                    state.set({ properties: { condition_weaknesses: val } });
 	                },
 	            })),
-	            mithril(".property-line.senses", [
-	                mithril(SelectTagComponent, {
-	                    title: "Senses",
-	                    name: "senses",
-	                    choices: special_senses,
-	                    selected: state.current.properties.special_senses || [],
-	                    onchange(val) {
-	                        state.set({ properties: { special_senses: val } });
-	                    },
-	                })
-	            ]),
-	            mithril(".property-line.languages", [
-	                mithril(SelectTagComponent, {
-	                    title: "Languages",
-	                    name: "languages",
-	                    choices: languages,
-	                    selected: state.current.properties.languages || [],
-	                    onchange(val) {
-	                        state.current.properties.languages = val;
-	                    }
-	                })
-	            ]),
-	        ]);
+	            mithril(el.property_line, mithril(SelectTagComponent, {
+	                label: "Senses",
+	                name: "senses",
+	                choices: special_senses,
+	                selected: state.current.properties.special_senses || [],
+	                onchange(val) {
+	                    state.set({ properties: { special_senses: val } });
+	                },
+	            })),
+	            mithril(el.property_line, mithril(SelectTagComponent, {
+	                label: "Languages",
+	                name: "languages",
+	                choices: languages,
+	                selected: state.current.properties.languages || [],
+	                onchange(val) {
+	                    state.current.properties.languages = val;
+	                }
+	            })),
+	        ];
 	    }
 	};
 	const ActionsBlock = {
-	    view() {
+	    view({ attrs: { sb } }) {
 	        return mithril(".actions", [
 	            mithril("h3", "Actions"),
-	            mithril("hr"),
-	            mithril(".property-block.attack", [
-	                mithril("b", "Multiattack"),
-	                "Describe multiattack?",
-	            ]),
-	            mithril("hr"),
-	            mithril(".property-block.attack", [
-	                mithril("b", "Slam"),
-	                mithril("p", [
-	                    mithril("i", "Slams the ground with his fists"),
-	                    "+4 to hit, reach 5ft, one target.",
-	                    mithril("i", "Hit:"),
-	                    "5 (1d6 + 2) bludgeoning damage.",
-	                ]),
-	            ]),
+	            mithril(el.hr),
+	            sb.attacks.map((attack) => {
+	                return mithril(AttackComponent, { attack });
+	            }),
+	            mithril("button[name=new-attack]", {
+	                onclick() {
+	                    state.newAttack();
+	                }
+	            }, "+"),
 	        ]);
 	    }
 	};
@@ -3680,100 +4508,77 @@
 	        return mithril(".actions", mithril("button", {
 	            onclick(e) {
 	                e.preventDefault();
+	                state.saveToCompendium(state.current);
+	            }
+	        }, "save to compendium"), mithril("input[type=text]", {
+	            value: JSON.stringify(state.current),
+	        }), mithril("button", {
+	            onclick(e) {
+	                e.preventDefault();
 	                const copyText = JSON.stringify(state.current, null, 2);
 	                navigator.clipboard.writeText(copyText);
 	            }
-	        }, "copy json to clipboard"), mithril("button", {
-	            onclick(e) {
-	                e.preventDefault();
-	                state.saveToCompendium(state.current);
-	            }
-	        }, "save to compendium"), mithril("textarea", { value: JSON.stringify(state.current) }));
+	        }, "copy json to clipboard"));
 	    }
 	};
 	const StatBlockComponent = {
-	    oninit() {
-	        state.setup();
-	    },
 	    view() {
-	        return mithril(".stat-block", [
-	            mithril(".crc", state.current.uid),
-	            mithril("hr"),
-	            mithril("div.stat-block", [
-	                mithril(".creature-heading", [
-	                    mithril("h1", mithril(NameEditorComponent)),
-	                    mithril("p.tags", [
-	                        mithril("span.level", ["lvl ", mithril(SelectLevelComponent)]),
-	                        mithril("span.role", mithril(SelectComponent, {
-	                            name: "role",
-	                            onchange(val) { state.set({ role: val }); },
-	                            current: state.current.role,
-	                            choices: keys(roles),
-	                        })),
-	                        mithril("span.modifier", mithril(SelectComponent, {
-	                            name: "modifier",
-	                            onchange(val) { state.set({ modifier: val }); },
-	                            current: state.current.modifier,
-	                            choices: keys(modifiers),
-	                        })),
-	                        mithril("span.size", mithril(SelectComponent, {
-	                            name: "size",
-	                            onchange(val) { state.set({ size: val }); },
-	                            current: state.current.size,
-	                            choices: sizes,
-	                        })),
-	                        mithril("span.category", mithril(SelectComponent, {
-	                            name: "category",
-	                            onchange(val) { state.set({ category: val }); },
-	                            current: state.current.category,
-	                            choices: categories,
-	                        })),
-	                        mithril("span.alignment", mithril(SelectComponent, {
-	                            name: "alignment",
-	                            onchange(val) { state.set({ alignment: val }); },
-	                            current: state.current.alignment,
-	                            choices: alignments,
-	                        })),
-	                    ]),
-	                ]),
-	                mithril("hr"),
-	                mithril(".base-properties", [
-	                    mithril(ArmorClassComponent, { sb: state.current }),
-	                    mithril(HitPointComponent, { sb: state.current }),
-	                    mithril(SpeedComponent, { sb: state.current }),
-	                    mithril(ChallengeRatingComponent, { sb: state.current }),
-	                    mithril(DamagePerActionComponent, { sb: state.current }),
-	                ]),
-	                mithril("hr"),
-	                mithril(AbilitiesBlockComponent(), { ability_modifiers: state.current.ability_modifiers }),
-	                mithril("hr"),
-	                mithril(PropertyLines),
-	                mithril("hr"),
-	                mithril(ActionsBlock),
-	            ]),
-	            mithril(SimpleCreatureJSON),
-	        ]);
+	        return mithril(".stat-block", mithril(el.crc, state.current.uid), mithril(el.hr), mithril(el.name_editor, mithril(NameEditorComponent)), mithril(el.property_line, mithril("span.level", "lvl ", mithril(SelectLevelComponent)), mithril(SelectComponent, {
+	            name: "role",
+	            label: "Role",
+	            onchange(val) { state.set({ role: val }); },
+	            current: state.current.role,
+	            choices: keys(roles),
+	        }), mithril(SelectComponent, {
+	            name: "modifier",
+	            label: "Modifier",
+	            onchange(val) { state.set({ modifier: val }); },
+	            current: state.current.modifier,
+	            choices: keys(modifiers),
+	        }), mithril(SelectComponent, {
+	            name: "size",
+	            label: "Size",
+	            onchange(val) { state.set({ size: val }); },
+	            current: state.current.size,
+	            choices: sizes,
+	        }), mithril(SelectComponent, {
+	            name: "category",
+	            label: "Category",
+	            onchange(val) { state.set({ category: val }); },
+	            current: state.current.category,
+	            choices: categories,
+	        }), mithril(SelectComponent, {
+	            name: "alignment",
+	            label: "Alignment",
+	            onchange(val) { state.set({ alignment: val }); },
+	            current: state.current.alignment,
+	            choices: alignments,
+	        })), mithril(el.hr), mithril(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `), mithril(BaseProperty, "Armor Class", state.current.armor_class), mithril(BaseProperty, "Speed", state.current.speed, "ft"), mithril(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "), mithril(BaseProperty, "Damage per Action", state.current.damage_per_action), mithril(el.hr), mithril(el.abilities_block, map((mod) => mithril(AbilityModifierComponent, { mod }), ["str", "dex", "con", "int", "wis", "cha"])), mithril(el.hr), mithril(PropertyLines), mithril(el.hr), mithril(ActionsBlock, { sb: state.current }), mithril(el.hr), mithril(SimpleCreatureJSON));
 	    },
 	};
-	const SimpleMonsterCompendium = {
+	const SimpleCreatureCompendium = {
 	    oninit() {
 	        state.loadCreatureCompendium();
 	    },
 	    view() {
-	        return mithril("div.monster-list", mithril("h1", "List of creatures"), mithril(".compendium", mithril(".header", mithril("span.label", "uid"), mithril("span.label", "name"), mithril("span.label", "level"), mithril("span.label", "role"), mithril("span.label", "modifier")), map((creature) => mithril(".creature", {
+	        return mithril(el.compendium, mithril("h1", "List of creatures"), mithril(el.compendium, mithril(el.compendium_header + style.light_bg, mithril(el.compendium_cell, "uid"), mithril(el.compendium_cell, "name"), mithril(el.compendium_cell, "level"), mithril(el.compendium_cell, "role"), mithril(el.compendium_cell, "modifier")), map((creature) => mithril(el.compendium_row + style.hilight_bg, {
 	            key: creature.uid,
 	            onclick() {
 	                state.current = creature;
 	            }
-	        }, mithril("span.uid", creature.uid), mithril("span.name", creature.name), mithril("span.level", creature.level), mithril("span.role", creature.role), mithril("span.modifier", creature.modifier), mithril("span.delete", { onclick() { state.deleteFromCompendium(creature.uid); } }, "x")), values(state.list))));
+	        }, mithril(el.compendium_cell, creature.uid), mithril(el.compendium_cell, creature.name), mithril(el.compendium_cell, creature.level), mithril(el.compendium_cell, creature.role), mithril(el.compendium_cell, creature.modifier), mithril(el.compendium_cell + style.remove, { onclick() { state.deleteFromCompendium(creature.uid); } }, "x")), values(state.list))));
 	    }
 	};
 	const Ui = {
-	    oninit: state.setup,
+	    oninit: state.init,
 	    view() {
-	        return mithril(".little-monster-maker", [
+	        return mithril(".little-creature-maker" + bss `
+      ff Quattrocento, sans-serif
+      fs 1.0rem
+      lh 1.6rem
+    `, [
 	            mithril(StatBlockComponent),
-	            mithril(SimpleMonsterCompendium),
+	            mithril(SimpleCreatureCompendium),
 	        ]);
 	    },
 	};

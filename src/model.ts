@@ -1,7 +1,9 @@
-import { map, max, values, reduce } from "rambda"
+import { map, max, mergeDeepRight, reduce, prop } from "rambda"
 import { sum, sump, mulp } from "./utils.js"
 import { crc16 } from "./crc.js"
 import * as tables from "./tables.js"
+
+export type AbilityNames = keyof Abilities
 
 export type Abilities = {
   str: number
@@ -19,10 +21,16 @@ export type Weapon = {
 
 export type Spell = string
 export type Die = string
+export type DamageType = typeof tables.damage_types[number]
 
-export type Attacks = {
-  spells: Array<[Spell, Die]>
-  weapon: Array<[Weapon, Die]>
+export type Attack = {
+  id: string
+  name: string
+  description: string
+  die_num: number
+  die: Die
+  mod: number
+  type: DamageType
 }
 
 export type Properties = { [key: string]: string[] }
@@ -32,8 +40,8 @@ export type StatBlock = {
 
   name: string
   level: number
-  role: tables.RoleName
-  modifier: tables.ModifierName
+  role: tables.Role
+  modifier: tables.Modifier
   alignment: string
   category: string
   size: string
@@ -53,7 +61,7 @@ export type StatBlock = {
   ability_modifiers: Abilities
   challenge_rating: string
 
-  attacks: Attacks
+  attacks: Attack[]
   specials: string[]
   properties: Properties
 }
@@ -76,14 +84,12 @@ function generateUuid(opts: Partial<StatBlock>): string {
 }
 
 export function createCreature(opts: Partial<StatBlock>): StatBlock {
-  const role: tables.Role = tables.roles[opts.role]
-  const modifier: tables.Modifier = tables.modifiers[opts.modifier]
-  const template: tables.SimpleMonster = templateByLevel(opts.level)
+  const role = tables.roles[opts.role]
+  const modifier = tables.modifiers[opts.modifier]
+  const template = templateByLevel(opts.level)
 
-  const saving_throws = map(
-    (s) => s + role.saving_throws + modifier.saving_throws,
-    template.saving_throws,
-  )
+  const saving_throws = template.saving_throws.map(
+    (s: number) => s + role.saving_throws + modifier.saving_throws)
 
   let s = {
     major: {
@@ -138,7 +144,8 @@ export function createCreature(opts: Partial<StatBlock>): StatBlock {
     hit_points,
     attack_bonus: sump("attack_bonus", template, role, modifier),
     damage_per_action: mulp("damage_per_action", template, role, modifier),
-    spell_dc: template.spell_dc.map((spell_dc) => spell_dc + modifier.spell_dc),
+    spell_dc: template.spell_dc
+      .map((spell_dc: number) => spell_dc + modifier.spell_dc),
     initiative: sum(
       template.proficiency_bonus,
       role.initiative,
@@ -183,8 +190,7 @@ export const CreatureCompendium: CreatureCompendium = {
  */
 function calculateHitDie(sb: Partial<StatBlock>): [number, string, number] {
   let die = tables.HitDies[sb.size]
-  let estimate = tables.dies2hp[die]
-  // let target = sb.hit_points - base
+  let estimate = tables.dies_avg[die]
 
   let sway = Math.ceil((sb.hit_points / 100) * 15)
   let result = 0
@@ -215,8 +221,8 @@ function calculateWeaponAttackDie(attacks: number, sb: StatBlock) {
 
   let sway = Math.ceil(dmg / 100 * 15)
 
-  for (const d in tables.dies2hp) {
-    let avg = tables.dies2hp[d]
+  for (const d in tables.dies_avg) {
+    let avg = tables.dies_avg[d]
     if (dmg - modifier + avg < sway) {}
   }
 
@@ -241,4 +247,103 @@ export function modToAbilityScore(mod: number): number {
   return 10 + Math.floor(
     mod * 2
   )
+}
+
+export function attackDamage(atk: Attack) {
+  const mediumDmg = tables.dies_avg[atk.die]
+  const maxDie = parseInt(atk.die.replace(/[^\d]/, ""))
+
+  return {
+    min: atk.die_num + atk.mod,
+    avg: mediumDmg * atk.die_num + atk.mod,
+    max: maxDie * atk.die_num + atk.mod,
+  }
+}
+
+const demo_creature: Partial<StatBlock> = {
+  name: "Creature",
+  level: 0,
+  role: "soldier",
+  modifier: "normal",
+  size: "small",
+  attacks: [],
+}
+
+export const state = {
+  STORE_CURRENT_KEY: 'LMM_Current',
+  STORE_COMPENDIUM_KEY: 'LMM_Compendium',
+
+  list: {} as { [key: string]: StatBlock },
+  current: demo_creature as StatBlock,
+
+  init() {
+    const data = JSON.parse(localStorage.getItem(state.STORE_CURRENT_KEY))
+    if (!!data) {
+      state.current = data
+    }
+    state.update()
+  },
+  update() {
+    state.current = createCreature(state.current)
+    state.save()
+  },
+  save() {
+    localStorage.setItem("current", JSON.stringify(state.current))
+  },
+
+  set(data: Partial<StatBlock>) {
+    state.current = mergeDeepRight(
+      state.current,
+      data
+    )
+    state.update()
+  },
+
+  loadCreatureCompendium() {
+    const data = JSON.parse(localStorage.getItem(state.STORE_COMPENDIUM_KEY))
+    state.list = data || {}
+  },
+
+  saveToCompendium(sb: StatBlock) {
+    state.list[sb.uid] = sb
+    state.saveCompendium()
+  },
+
+  deleteFromCompendium(uid: string) {
+    delete state.list[uid]
+    state.saveCompendium()
+  },
+
+  saveCompendium() {
+    localStorage.setItem(state.STORE_COMPENDIUM_KEY, JSON.stringify(state.list))
+  },
+
+  resetCompendium() {
+    localStorage.setItem(state.STORE_COMPENDIUM_KEY, "{}")
+  },
+
+  newAttack() {
+    const id = crc16(Math.random().toString())
+    state.current.attacks.push({
+      id,
+      name: "",
+      die_num: 1,
+      description: "",
+      die: "d4",
+      type: "slashing",
+      mod: 0,
+    })
+  },
+  removeAttack(attack: Partial<Attack>) {
+    const attacks = state.current.attacks
+      .filter((atk) => atk.id != attack.id)
+
+    state.set({ attacks })
+  },
+  setAttack(atk: Attack) {
+    const attacks = state.current.attacks
+      .map((k) => (k.id == atk.id) ? atk : k)
+
+    state.set({ attacks })
+  },
 }
