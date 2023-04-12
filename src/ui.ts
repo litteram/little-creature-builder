@@ -495,6 +495,7 @@ const SimpleCreatureJSON: m.Component = {
           navigator.clipboard.writeText(copyText)
         }
       }, "copy json to clipboard"),
+
       m(el.button, {
         onclick() {
           const val = (document.getElementById("littleCreatureJSON") as HTMLInputElement).value
@@ -503,7 +504,7 @@ const SimpleCreatureJSON: m.Component = {
       }, "import from JSON"),
 
       m(m.route.Link, {
-        href: "/" + btoa(currentJson)
+        href: "/" + model.encode(state.current)
       }, "Permalink")
     )
   }
@@ -610,6 +611,7 @@ const SimpleCreatureCompendium: m.Comp = {
             key: creature.uid,
             onclick() {
               state.current = creature
+              m.route.set("/" + model.encode(creature))
             }
           },
             m(el.compendium_cell, creature.uid),
@@ -618,9 +620,11 @@ const SimpleCreatureCompendium: m.Comp = {
             m(el.compendium_cell, creature.role),
             m(el.compendium_cell, creature.modifier),
             m(el.compendium_cell, m(m.route.Link, {
-              href: "/" + btoa(JSON.stringify(creature))
+              href: "/" + model.encode(creature)
             }, "Permalink")),
-            m(el.compendium_cell + style.remove, { onclick() { state.deleteFromCompendium(creature.uid) } }, "x")
+            m(el.compendium_cell + style.remove, {
+              onclick() { state.deleteFromCompendium(creature.uid) }
+            }, "x")
           ),
           values(state.list)))
     )
@@ -631,7 +635,7 @@ export const Ui: m.Component<{ creature?: string }> = {
   oninit(vnode) {
     if (vnode.attrs.creature) {
       try {
-        const creature = JSON.parse(atob(vnode.attrs.creature))
+        const creature = model.decode(vnode.attrs.creature)
         return state.init(creature)
       } catch (e) {
         console.error(e)

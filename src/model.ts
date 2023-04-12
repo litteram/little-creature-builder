@@ -1,3 +1,4 @@
+import JSONCrush from "jsoncrush"
 import { map, max, mergeDeepRight, reduce, prop } from "rambda"
 import { sum, sump, mulp } from "./utils.js"
 import { crc16 } from "./crc.js"
@@ -346,4 +347,15 @@ export const state = {
 
     state.set({ attacks })
   },
+
+}
+
+export function encode(data: StatBlock): string {
+  const str = JSON.stringify(data)
+  return encodeURIComponent(JSONCrush.crush(str))
+}
+
+export function decode(data: string) {
+  const str = JSONCrush.uncrush(decodeURIComponent(data))
+  return JSON.parse(str)
 }

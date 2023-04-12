@@ -16,6 +16,7 @@
     "@types/mithril": "^2.0.12",
     "bss": "^1.6.4",
     "crc": "^4.3.2",
+    "jsoncrush": "^1.1.8",
     "live-server": "^1.2.2",
     "mithril": "^2.2.2",
     "rambda": "^7.5.0",
