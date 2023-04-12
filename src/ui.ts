@@ -41,6 +41,8 @@ const style_base = {
   select: b`
     border-bottom: 2px dotted ${colors.red}
   `,
+  button: b`
+  `,
   hr: b`
     bc rgba(0,0,0,0)
     bi linear-gradient(90deg, ${colors.red} 0px, rgba(125, 52, 37, 0))
@@ -119,6 +121,7 @@ const el: { [key: string]: string } = {
   tags: "span" + style.tags,
   tag: "span" + style.tag,
   select: "select" + style.select,
+  button: "button" + style.button,
   hr: "hr" + style.hr,
   table: "table" + style.table,
   table_row: "tr" + style.table_row,
@@ -471,25 +474,32 @@ const ActionsBlock: m.Component<{ sb: StatBlock }> = {
 const SimpleCreatureJSON: m.Component = {
   view() {
     return m(".actions",
-
-      m("button", {
+      m(el.button, {
         onclick(e: Event) {
           e.preventDefault()
           state.saveToCompendium(state.current)
         }
       }, "save to compendium"),
 
-      m("input[type=text]", {
+      m(el.input, {
+        id: "littleCreatureJSON",
+        type: "text",
         value: JSON.stringify(state.current),
       }),
 
-      m("button", {
+      m(el.button, {
         onclick(e: Event) {
           e.preventDefault()
           const copyText = JSON.stringify(state.current, null, 2)
           navigator.clipboard.writeText(copyText)
         }
       }, "copy json to clipboard"),
+      m(el.button, {
+        onclick() {
+          const val = (document.getElementById("littleCreatureJSON") as HTMLInputElement).value
+          state.set(JSON.parse(val))
+        }
+      }, "import from JSON")
     )
   }
 }

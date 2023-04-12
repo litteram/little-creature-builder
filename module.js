@@ -1,56 +1,8 @@
 (function () {
   'use strict';
 
-  const { isArray } = Array;
-
-  const INCORRECT_ITERABLE_INPUT = 'Incorrect iterable input';
-
-  const { keys } = Object;
-
-  function mapArray(
-    fn, list, isIndexed = false
-  ){
-    let index = 0;
-    const willReturn = Array(list.length);
-
-    while (index < list.length){
-      willReturn[ index ] = isIndexed ? fn(list[ index ], index) : fn(list[ index ]);
-
-      index++;
-    }
-
-    return willReturn
-  }
-
-  function mapObject(fn, obj){
-    if (arguments.length === 1){
-      return _obj => mapObject(fn, _obj)
-    }
-    let index = 0;
-    const objKeys = keys(obj);
-    const len = objKeys.length;
-    const willReturn = {};
-
-    while (index < len){
-      const key = objKeys[ index ];
-      willReturn[ key ] = fn(
-        obj[ key ], key, obj
-      );
-      index++;
-    }
-
-    return willReturn
-  }
-
-  function map(fn, iterable){
-    if (arguments.length === 1) return _iterable => map(fn, _iterable)
-    if (!iterable){
-      throw new Error(INCORRECT_ITERABLE_INPUT)
-    }
-
-    if (isArray(iterable)) return mapArray(fn, iterable)
-
-    return mapObject(fn, iterable)
+  function keys(x){
+    return Object.keys(x)
   }
 
   function fnProperty(fn, base, prop, objs) {
@@ -827,7 +779,9 @@
       huge: "d10",
       gargantuan: "d20",
   };
-  const dies2hp = {
+  const dies_avg = {
+      d2: 1,
+      d3: 1.5,
       d4: 2.5,
       d6: 3.5,
       d8: 4.5,
@@ -835,6 +789,8 @@
       d12: 6.5,
       d20: 10.5,
   };
+  const dies = keys(dies_avg);
+  dies.map((i) => i.replace(/[^\d]/, "")).map(parseInt);
   const cr_exp = [
       { cr: "0", exp: 10 },
       { cr: "1/8", exp: 25 },
@@ -884,7 +840,7 @@
       const role = roles[opts.role];
       const modifier = modifiers[opts.modifier];
       const template = templateByLevel(opts.level);
-      const saving_throws = map((s) => s + role.saving_throws + modifier.saving_throws, template.saving_throws);
+      const saving_throws = template.saving_throws.map((s) => s + role.saving_throws + modifier.saving_throws);
       ({
           major: {
               stat: saving_throws[0],
@@ -933,7 +889,8 @@
           hit_points,
           attack_bonus: sump("attack_bonus", template, role, modifier),
           damage_per_action: mulp("damage_per_action", template, role, modifier),
-          spell_dc: template.spell_dc.map((spell_dc) => spell_dc + modifier.spell_dc),
+          spell_dc: template.spell_dc
+              .map((spell_dc) => spell_dc + modifier.spell_dc),
           initiative: sum(template.proficiency_bonus, role.initiative, modifier.initiative),
           perception: sum(template.proficiency_bonus, role.perception, modifier.perception),
           stealth: sum(0, modifier.stealth),
@@ -952,8 +909,7 @@
    */
   function calculateHitDie(sb) {
       let die = HitDies[sb.size];
-      let estimate = dies2hp[die];
-      // let target = sb.hit_points - base
+      let estimate = dies_avg[die];
       let sway = Math.ceil((sb.hit_points / 100) * 15);
       let result = 0;
       let dies = 0;
