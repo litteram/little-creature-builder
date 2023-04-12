@@ -4180,6 +4180,8 @@
 	    select: bss `
     border-bottom: 2px dotted ${colors.red}
   `,
+	    button: bss `
+  `,
 	    hr: bss `
     bc rgba(0,0,0,0)
     bi linear-gradient(90deg, ${colors.red} 0px, rgba(125, 52, 37, 0))
@@ -4249,6 +4251,7 @@
 	    tags: "span" + style.tags,
 	    tag: "span" + style.tag,
 	    select: "select" + style.select,
+	    button: "button" + style.button,
 	    hr: "hr" + style.hr,
 	    table: "table" + style.table,
 	    table_row: "tr" + style.table_row,
@@ -4505,20 +4508,27 @@
 	};
 	const SimpleCreatureJSON = {
 	    view() {
-	        return mithril(".actions", mithril("button", {
+	        return mithril(".actions", mithril(el.button, {
 	            onclick(e) {
 	                e.preventDefault();
 	                state.saveToCompendium(state.current);
 	            }
-	        }, "save to compendium"), mithril("input[type=text]", {
+	        }, "save to compendium"), mithril(el.input, {
+	            id: "littleCreatureJSON",
+	            type: "text",
 	            value: JSON.stringify(state.current),
-	        }), mithril("button", {
+	        }), mithril(el.button, {
 	            onclick(e) {
 	                e.preventDefault();
 	                const copyText = JSON.stringify(state.current, null, 2);
 	                navigator.clipboard.writeText(copyText);
 	            }
-	        }, "copy json to clipboard"));
+	        }, "copy json to clipboard"), mithril(el.button, {
+	            onclick() {
+	                const val = document.getElementById("littleCreatureJSON").value;
+	                state.set(JSON.parse(val));
+	            }
+	        }, "import from JSON"));
 	    }
 	};
 	const StatBlockComponent = {
