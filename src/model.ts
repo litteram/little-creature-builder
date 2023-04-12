@@ -276,8 +276,8 @@ export const state = {
   list: {} as { [key: string]: StatBlock },
   current: demo_creature as StatBlock,
 
-  init() {
-    const data = JSON.parse(localStorage.getItem(state.STORE_CURRENT_KEY))
+  init(creature?: Partial<StatBlock>) {
+    const data = creature ? creature : JSON.parse(localStorage.getItem(state.STORE_CURRENT_KEY))
     if (!!data) {
       state.current = data
     }

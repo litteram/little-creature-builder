@@ -4085,8 +4085,8 @@
 	    STORE_COMPENDIUM_KEY: 'LMM_Compendium',
 	    list: {},
 	    current: demo_creature,
-	    init() {
-	        const data = JSON.parse(localStorage.getItem(state.STORE_CURRENT_KEY));
+	    init(creature) {
+	        const data = creature ? creature : JSON.parse(localStorage.getItem(state.STORE_CURRENT_KEY));
 	        if (!!data) {
 	            state.current = data;
 	        }
@@ -4508,6 +4508,8 @@
 	};
 	const SimpleCreatureJSON = {
 	    view() {
+	        const currentJson = JSON.stringify(state.current);
+	        const copyText = JSON.stringify(state.current, null, 2);
 	        return mithril(".actions", mithril(el.button, {
 	            onclick(e) {
 	                e.preventDefault();
@@ -4516,11 +4518,10 @@
 	        }, "save to compendium"), mithril(el.input, {
 	            id: "littleCreatureJSON",
 	            type: "text",
-	            value: JSON.stringify(state.current),
+	            value: currentJson,
 	        }), mithril(el.button, {
 	            onclick(e) {
 	                e.preventDefault();
-	                const copyText = JSON.stringify(state.current, null, 2);
 	                navigator.clipboard.writeText(copyText);
 	            }
 	        }, "copy json to clipboard"), mithril(el.button, {
@@ -4528,7 +4529,9 @@
 	                const val = document.getElementById("littleCreatureJSON").value;
 	                state.set(JSON.parse(val));
 	            }
-	        }, "import from JSON"));
+	        }, "import from JSON"), mithril(mithril.route.Link, {
+	            href: "/" + btoa(currentJson)
+	        }, "Permalink"));
 	    }
 	};
 	const StatBlockComponent = {
@@ -4576,11 +4579,24 @@
 	            onclick() {
 	                state.current = creature;
 	            }
-	        }, mithril(el.compendium_cell, creature.uid), mithril(el.compendium_cell, creature.name), mithril(el.compendium_cell, creature.level), mithril(el.compendium_cell, creature.role), mithril(el.compendium_cell, creature.modifier), mithril(el.compendium_cell + style.remove, { onclick() { state.deleteFromCompendium(creature.uid); } }, "x")), values(state.list))));
+	        }, mithril(el.compendium_cell, creature.uid), mithril(el.compendium_cell, creature.name), mithril(el.compendium_cell, creature.level), mithril(el.compendium_cell, creature.role), mithril(el.compendium_cell, creature.modifier), mithril(el.compendium_cell, mithril(mithril.route.Link, {
+	            href: "/" + btoa(JSON.stringify(creature))
+	        }, "Permalink")), mithril(el.compendium_cell + style.remove, { onclick() { state.deleteFromCompendium(creature.uid); } }, "x")), values(state.list))));
 	    }
 	};
 	const Ui = {
-	    oninit: state.init,
+	    oninit(vnode) {
+	        if (vnode.attrs.creature) {
+	            try {
+	                const creature = JSON.parse(atob(vnode.attrs.creature));
+	                return state.init(creature);
+	            }
+	            catch (e) {
+	                console.error(e);
+	            }
+	        }
+	        state.init();
+	    },
 	    view() {
 	        return mithril(".little-creature-maker" + bss `
       ff Quattrocento, sans-serif
@@ -4593,7 +4609,10 @@
 	    },
 	};
 
-	mithril.mount(document.body, Ui);
+	mithril.route(document.body, "/", {
+	    "/": Ui,
+	    "/:creature": Ui,
+	});
 
 })();
 //# sourceMappingURL=standalone.js.map

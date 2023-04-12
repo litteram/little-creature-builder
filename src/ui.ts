@@ -473,6 +473,8 @@ const ActionsBlock: m.Component<{ sb: StatBlock }> = {
 
 const SimpleCreatureJSON: m.Component = {
   view() {
+    const currentJson = JSON.stringify(state.current)
+    const copyText = JSON.stringify(state.current, null, 2)
     return m(".actions",
       m(el.button, {
         onclick(e: Event) {
@@ -484,13 +486,12 @@ const SimpleCreatureJSON: m.Component = {
       m(el.input, {
         id: "littleCreatureJSON",
         type: "text",
-        value: JSON.stringify(state.current),
+        value: currentJson,
       }),
 
       m(el.button, {
         onclick(e: Event) {
           e.preventDefault()
-          const copyText = JSON.stringify(state.current, null, 2)
           navigator.clipboard.writeText(copyText)
         }
       }, "copy json to clipboard"),
@@ -499,7 +500,11 @@ const SimpleCreatureJSON: m.Component = {
           const val = (document.getElementById("littleCreatureJSON") as HTMLInputElement).value
           state.set(JSON.parse(val))
         }
-      }, "import from JSON")
+      }, "import from JSON"),
+
+      m(m.route.Link, {
+        href: "/" + btoa(currentJson)
+      }, "Permalink")
     )
   }
 }
@@ -612,6 +617,9 @@ const SimpleCreatureCompendium: m.Comp = {
             m(el.compendium_cell, creature.level),
             m(el.compendium_cell, creature.role),
             m(el.compendium_cell, creature.modifier),
+            m(el.compendium_cell, m(m.route.Link, {
+              href: "/" + btoa(JSON.stringify(creature))
+            }, "Permalink")),
             m(el.compendium_cell + style.remove, { onclick() { state.deleteFromCompendium(creature.uid) } }, "x")
           ),
           values(state.list)))
@@ -619,8 +627,18 @@ const SimpleCreatureCompendium: m.Comp = {
   }
 }
 
-export const Ui = {
-  oninit: state.init,
+export const Ui: m.Component<{ creature?: string }> = {
+  oninit(vnode) {
+    if (vnode.attrs.creature) {
+      try {
+        const creature = JSON.parse(atob(vnode.attrs.creature))
+        return state.init(creature)
+      } catch (e) {
+        console.error(e)
+      }
+    }
+    state.init()
+  },
   view() {
     return m(".little-creature-maker" + b`
       ff Quattrocento, sans-serif
