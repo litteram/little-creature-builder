@@ -3,6 +3,10 @@
 
 	var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
+	function getDefaultExportFromCjs (x) {
+		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+	}
+
 	var vnode;
 	var hasRequiredVnode;
 
@@ -2263,654 +2267,6 @@
 
 	var mithril = m;
 
-	var pseudos = [
-	  ':active',
-	  ':any',
-	  ':checked',
-	  ':default',
-	  ':disabled',
-	  ':empty',
-	  ':enabled',
-	  ':first',
-	  ':first-child',
-	  ':first-of-type',
-	  ':fullscreen',
-	  ':focus',
-	  ':hover',
-	  ':indeterminate',
-	  ':in-range',
-	  ':invalid',
-	  ':last-child',
-	  ':last-of-type',
-	  ':left',
-	  ':link',
-	  ':only-child',
-	  ':only-of-type',
-	  ':optional',
-	  ':out-of-range',
-	  ':read-only',
-	  ':read-write',
-	  ':required',
-	  ':right',
-	  ':root',
-	  ':scope',
-	  ':target',
-	  ':valid',
-	  ':visited',
-
-	  // With value
-	  ':dir',
-	  ':lang',
-	  ':not',
-	  ':nth-child',
-	  ':nth-last-child',
-	  ':nth-last-of-type',
-	  ':nth-of-type',
-
-	  // Elements
-	  '::after',
-	  '::before',
-	  '::first-letter',
-	  '::first-line',
-	  '::selection',
-	  '::backdrop',
-	  '::placeholder',
-	  '::marker',
-	  '::spelling-error',
-	  '::grammar-error'
-	];
-
-	var popular = {
-	  ai : 'alignItems',
-	  b  : 'bottom',
-	  bc : 'backgroundColor',
-	  br : 'borderRadius',
-	  bs : 'boxShadow',
-	  bi : 'backgroundImage',
-	  c  : 'color',
-	  d  : 'display',
-	  f  : 'float',
-	  fd : 'flexDirection',
-	  ff : 'fontFamily',
-	  fs : 'fontSize',
-	  h  : 'height',
-	  jc : 'justifyContent',
-	  l  : 'left',
-	  lh : 'lineHeight',
-	  ls : 'letterSpacing',
-	  m  : 'margin',
-	  mb : 'marginBottom',
-	  ml : 'marginLeft',
-	  mr : 'marginRight',
-	  mt : 'marginTop',
-	  o  : 'opacity',
-	  p  : 'padding',
-	  pb : 'paddingBottom',
-	  pl : 'paddingLeft',
-	  pr : 'paddingRight',
-	  pt : 'paddingTop',
-	  r  : 'right',
-	  t  : 'top',
-	  ta : 'textAlign',
-	  td : 'textDecoration',
-	  tt : 'textTransform',
-	  w  : 'width'
-	};
-
-	var cssProperties = ['float'].concat(Object.keys(
-	  typeof document === 'undefined'
-	    ? {}
-	    : findWidth(document.documentElement.style)
-	).filter(function (p) { return p.indexOf('-') === -1 && p !== 'length'; }));
-
-	function findWidth(obj) {
-	  return obj
-	    ? obj.hasOwnProperty('width')
-	      ? obj
-	      : findWidth(Object.getPrototypeOf(obj))
-	    : {}
-	}
-
-	var isProp = /^-?-?[a-z][a-z-_0-9]*$/i;
-
-	var memoize = function (fn, cache) {
-	  if ( cache === void 0 ) cache = {};
-
-	  return function (item) { return item in cache
-	    ? cache[item]
-	    : cache[item] = fn(item); };
-	};
-
-	function add(style, prop, values) {
-	  if (prop in style) // Recursively increase specificity
-	    { add(style, '!' + prop, values); }
-	  else
-	    { style[prop] = formatValues(prop, values); }
-	}
-
-	var vendorMap = Object.create(null, {});
-	var vendorValuePrefix = Object.create(null, {});
-
-	var vendorRegex = /^(o|O|ms|MS|Ms|moz|Moz|webkit|Webkit|WebKit)([A-Z])/;
-
-	var appendPx = memoize(function (prop) {
-	  var el = document.createElement('div');
-
-	  try {
-	    el.style[prop] = '1px';
-	    el.style.setProperty(prop, '1px');
-	    return el.style[prop].slice(-3) === '1px' ? 'px' : ''
-	  } catch (err) {
-	    return ''
-	  }
-	}, {
-	  flex: '',
-	  boxShadow: 'px',
-	  border: 'px',
-	  borderTop: 'px',
-	  borderRight: 'px',
-	  borderBottom: 'px',
-	  borderLeft: 'px'
-	});
-
-	function lowercaseFirst(string) {
-	  return string.charAt(0).toLowerCase() + string.slice(1)
-	}
-
-	function assign(obj, obj2) {
-	  for (var key in obj2) {
-	    if (obj2.hasOwnProperty(key)) {
-	      obj[key] = typeof obj2[key] === 'string'
-	        ? obj2[key]
-	        : assign(obj[key] || {}, obj2[key]);
-	    }
-	  }
-	  return obj
-	}
-
-	var hyphenSeparator = /-([a-z])/g;
-	function hyphenToCamelCase(hyphen) {
-	  return hyphen.slice(hyphen.charAt(0) === '-' ? 1 : 0).replace(hyphenSeparator, function(match) {
-	    return match[1].toUpperCase()
-	  })
-	}
-
-	var camelSeparator = /(\B[A-Z])/g;
-	function camelCaseToHyphen(camelCase) {
-	  return camelCase.replace(camelSeparator, '-$1').toLowerCase()
-	}
-
-	var initialMatch = /([A-Z])/g;
-	function initials(camelCase) {
-	  return camelCase.charAt(0) + (camelCase.match(initialMatch) || []).join('').toLowerCase()
-	}
-
-	var ampersandMatch = /&/g;
-	function objectToRules(style, selector, suffix, single) {
-	  if ( suffix === void 0 ) suffix = '';
-
-	  var base = {};
-	  var extra = suffix.indexOf('&') > -1 && suffix.indexOf(',') === -1 ? '' : '&';
-	  var rules = [];
-
-	  Object.keys(style).forEach(function (prop) {
-	    if (prop.charAt(0) === '@')
-	      { rules.push(prop + '{' + objectToRules(style[prop], selector, suffix, single).join('') + '}'); }
-	    else if (typeof style[prop] === 'object')
-	      { rules = rules.concat(objectToRules(style[prop], selector, suffix + prop, single)); }
-	    else
-	      { base[prop] = style[prop]; }
-	  });
-
-	  if (Object.keys(base).length) {
-	    rules.unshift(
-	      ((single || (suffix.charAt(0) === ' ') ? '' : '&') + extra + suffix).replace(ampersandMatch, selector).trim() +
-	      '{' + stylesToCss(base) + '}'
-	    );
-	  }
-
-	  return rules
-	}
-
-	var selectorSplit = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
-
-	function stylesToCss(style) {
-	  return Object.keys(style).reduce(function (acc, prop) { return acc + propToString(prop.charAt(0) === '!' ? prop.slice(1) : prop, style[prop]); }
-	  , '')
-	}
-
-	function propToString(prop, value) {
-	  prop = prop in vendorMap ? vendorMap[prop] : prop;
-	  return (vendorRegex.test(prop) ? '-' : '')
-	    + (cssVar(prop)
-	      ? prop
-	      : camelCaseToHyphen(prop)
-	    )
-	    + ':'
-	    + value
-	    + ';'
-	}
-
-	function formatValues(prop, value) {
-	  return Array.isArray(value)
-	    ? value.map(function (v) { return formatValue(prop, v); }).join(' ')
-	    : typeof value === 'string'
-	      ? formatValues(prop, value.split(' '))
-	      : formatValue(prop, value)
-	}
-
-	function formatValue(prop, value) {
-	  return value in vendorValuePrefix
-	    ? vendorValuePrefix[value]
-	    : value + (isNaN(value) || value === null || value === 0 || value === '0' || typeof value === 'boolean' || cssVar(prop) ? '' : appendPx(prop))
-	}
-
-	function cssVar(prop) {
-	  return prop.charAt(0) === '-' && prop.charAt(1) === '-'
-	}
-
-	var classPrefix = 'b' + ('000' + ((Math.random() * 46656) | 0).toString(36)).slice(-3) +
-	                    ('000' + ((Math.random() * 46656) | 0).toString(36)).slice(-3);
-
-	var styleSheet = typeof document === 'object' && document.createElement('style');
-	styleSheet && document.head && document.head.appendChild(styleSheet);
-	styleSheet && (styleSheet.id = classPrefix);
-
-	var sheet = styleSheet && styleSheet.sheet;
-
-	var debug = false;
-	var classes = Object.create(null, {});
-	var rules = [];
-	var count = 0;
-
-	function setDebug(d) {
-	  debug = d;
-	}
-
-	function getSheet() {
-	  var content = rules.join('');
-	  rules = [];
-	  classes = Object.create(null, {});
-	  count = 0;
-	  return content
-	}
-
-	function getRules() {
-	  return rules
-	}
-
-	function insert(rule, index) {
-	  rules.push(rule);
-
-	  if (debug)
-	    { return styleSheet.textContent = rules.join('\n') }
-
-	  try {
-	    sheet && sheet.insertRule(rule, arguments.length > 1
-	      ? index
-	      : sheet.cssRules.length);
-	  } catch (e) {
-	    // Ignore thrown errors in eg. firefox for unsupported strings (::-webkit-inner-spin-button)
-	  }
-	}
-
-	function createClass(style) {
-	  var json = JSON.stringify(style);
-
-	  if (json in classes)
-	    { return classes[json] }
-
-	  var className = classPrefix + (++count)
-	      , rules = objectToRules(style, '.' + className);
-
-	  for (var i = 0; i < rules.length; i++)
-	    { insert(rules[i]); }
-
-	  classes[json] = className;
-
-	  return className
-	}
-
-	/* eslint no-invalid-this: 0 */
-
-	var shorts = Object.create(null);
-
-	function bss(input, value) {
-	  var b = chain(bss);
-	  input && assign(b.__style, parse.apply(null, arguments));
-	  return b
-	}
-
-	function setProp(prop, value) {
-	  Object.defineProperty(bss, prop, {
-	    configurable: true,
-	    value: value
-	  });
-	}
-
-	Object.defineProperties(bss, {
-	  __style: {
-	    configurable: true,
-	    writable: true,
-	    value: {}
-	  },
-	  valueOf: {
-	    configurable: true,
-	    writable: true,
-	    value: function() {
-	      return '.' + this.class
-	    }
-	  },
-	  toString: {
-	    configurable: true,
-	    writable: true,
-	    value: function() {
-	      return this.class
-	    }
-	  }
-	});
-
-	setProp('setDebug', setDebug);
-
-	setProp('$keyframes', keyframes);
-	setProp('$media', $media);
-	setProp('$import', $import);
-	setProp('$nest', $nest);
-	setProp('getSheet', getSheet);
-	setProp('getRules', getRules);
-	setProp('helper', helper);
-	setProp('css', css);
-	setProp('classPrefix', classPrefix);
-
-	function chain(instance) {
-	  var newInstance = Object.create(bss, {
-	    __style: {
-	      value: assign({}, instance.__style)
-	    },
-	    style: {
-	      enumerable: true,
-	      get: function() {
-	        var this$1$1 = this;
-
-	        return Object.keys(this.__style).reduce(function (acc, key) {
-	          if (typeof this$1$1.__style[key] === 'number' || typeof this$1$1.__style[key] === 'string')
-	            { acc[key.charAt(0) === '!' ? key.slice(1) : key] = this$1$1.__style[key]; }
-	          return acc
-	        }, {})
-	      }
-	    }
-	  });
-
-	  if (instance === bss)
-	    { bss.__style = {}; }
-
-	  return newInstance
-	}
-
-	cssProperties.forEach(function (prop) {
-	  var vendor = prop.match(vendorRegex);
-	  if (vendor) {
-	    var unprefixed = lowercaseFirst(prop.replace(vendorRegex, '$2'));
-	    if (cssProperties.indexOf(unprefixed) === -1) {
-	      if (unprefixed === 'flexDirection')
-	        { vendorValuePrefix.flex = '-' + vendor[1].toLowerCase() + '-flex'; }
-
-	      vendorMap[unprefixed] = prop;
-	      setProp(unprefixed, setter(prop));
-	      setProp(short(unprefixed), bss[unprefixed]);
-	      return
-	    }
-	  }
-
-	  setProp(prop, setter(prop));
-	  setProp(short(prop), bss[prop]);
-	});
-
-	setProp('content', function Content(arg) {
-	  var b = chain(this);
-	  arg === null || arg === undefined || arg === false
-	    ? delete b.__style.content
-	    : b.__style.content = '"' + arg + '"';
-	  return b
-	});
-
-	Object.defineProperty(bss, 'class', {
-	  set: function(value) {
-	    this.__class = value;
-	  },
-	  get: function() {
-	    return this.__class || createClass(this.__style)
-	  }
-	});
-
-	function $media(value, style) {
-	  var b = chain(this);
-	  if (value)
-	    { b.__style['@media ' + value] = parse(style); }
-
-	  return b
-	}
-
-	var hasUrl = /^('|"|url\('|url\(")/i;
-	function $import(value) {
-	  value && insert('@import '
-	    + (hasUrl.test(value) ? value : '"' + value + '"')
-	    + ';', 0);
-
-	  return chain(this)
-	}
-
-	function $nest(selector, properties) {
-	  var b = chain(this);
-	  if (arguments.length === 1)
-	    { Object.keys(selector).forEach(function (x) { return addNest(b.__style, x, selector[x]); }); }
-	  else if (selector)
-	    { addNest(b.__style, selector, properties); }
-
-	  return b
-	}
-
-	function addNest(style, selector, properties) {
-	  var prop = selector.split(selectorSplit).map(function (x) {
-	    x = x.trim();
-	    return (x.charAt(0) === ':' || x.charAt(0) === '[' ? '' : ' ') + x
-	  }).join(',&');
-
-	  prop in style
-	    ? assign(style[prop], parse(properties))
-	    : style[prop] = parse(properties);
-	}
-
-	pseudos.forEach(function (name) { return setProp('$' + hyphenToCamelCase(name.replace(/:/g, '')), function Pseudo(value, style) {
-	    var b = chain(this);
-	    if (isTagged(value))
-	      { b.__style[name] = parse.apply(null, arguments); }
-	    else if (value || style)
-	      { b.__style[name + (style ? '(' + value + ')' : '')] = parse(style || value); }
-	    return b
-	  }); }
-	);
-
-	function setter(prop) {
-	  return function CssProperty(value) {
-	    var b = chain(this);
-	    if (!value && value !== 0)
-	      { delete b.__style[prop]; }
-	    else if (arguments.length > 0)
-	      { add(b.__style, prop, Array.prototype.slice.call(arguments)); }
-
-	    return b
-	  }
-	}
-
-	function css(selector, style) {
-	  if (arguments.length === 1)
-	    { Object.keys(selector).forEach(function (key) { return addCss(key, selector[key]); }); }
-	  else
-	    { addCss(selector, style); }
-
-	  return chain(this)
-	}
-
-	function addCss(selector, style) {
-	  objectToRules(parse(style), selector, '', true).forEach(function (rule) { return insert(rule); });
-	}
-
-	function helper(name, styling) {
-	  if (arguments.length === 1)
-	    { return Object.keys(name).forEach(function (key) { return helper(key, name[key]); }) }
-
-	  delete bss[name]; // Needed to avoid weird get calls in chrome
-
-	  if (typeof styling === 'function') {
-	    helper[name] = styling;
-	    Object.defineProperty(bss, name, {
-	      configurable: true,
-	      value: function Helper(input) {
-	        var b = chain(this);
-	        var result = isTagged(input)
-	          ? styling(raw(input, arguments))
-	          : styling.apply(null, arguments);
-	        assign(b.__style, result.__style);
-	        return b
-	      }
-	    });
-	  } else {
-	    helper[name] = parse(styling);
-	    Object.defineProperty(bss, name, {
-	      configurable: true,
-	      get: function() {
-	        var b = chain(this);
-	        assign(b.__style, parse(styling));
-	        return b
-	      }
-	    });
-	  }
-	}
-
-	bss.helper('$animate', function (value, props) { return bss.animation(bss.$keyframes(props) + ' ' + value); }
-	);
-
-	function short(prop) {
-	  var acronym = initials(prop)
-	      , short = popular[acronym] && popular[acronym] !== prop ? prop : acronym;
-
-	  shorts[short] = prop;
-	  return short
-	}
-
-	var blockEndMatch = /;(?![^("]*[)"])|\n/;
-	var commentsMatch = /\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*(?![^("]*[)"])/g;
-	var propSeperator = /[ :]+/;
-
-	var stringToObject = memoize(function (string) {
-	  var last = ''
-	    , prev;
-
-	  return string.trim().replace(commentsMatch, '').split(blockEndMatch).reduce(function (acc, line) {
-	    if (!line)
-	      { return acc }
-	    line = last + line.trim();
-	    var ref = line.replace(propSeperator, ' ').split(' ');
-	    var key = ref[0];
-	    var tokens = ref.slice(1);
-
-	    last = line.charAt(line.length - 1) === ',' ? line : '';
-	    if (last)
-	      { return acc }
-
-	    if (line.charAt(0) === ',' || !isProp.test(key)) {
-	      acc[prev] += ' ' + line;
-	      return acc
-	    }
-
-	    if (!key)
-	      { return acc }
-
-	    var prop = key.charAt(0) === '-' && key.charAt(1) === '-'
-	      ? key
-	      : hyphenToCamelCase(key);
-
-	    prev = shorts[prop] || prop;
-
-	    if (key in helper) {
-	      typeof helper[key] === 'function'
-	        ? assign(acc, helper[key].apply(helper, tokens).__style)
-	        : assign(acc, helper[key]);
-	    } else if (prop in helper) {
-	      typeof helper[prop] === 'function'
-	        ? assign(acc, helper[prop].apply(helper, tokens).__style)
-	        : assign(acc, helper[prop]);
-	    } else if (tokens.length > 0) {
-	      add(acc, prev, tokens);
-	    }
-
-	    return acc
-	  }, {})
-	});
-
-	var count$1 = 0;
-	var keyframeCache = {};
-
-	function keyframes(props) {
-	  var content = Object.keys(props).reduce(function (acc, key) { return acc + key + '{' + stylesToCss(parse(props[key])) + '}'; }
-	  , '');
-
-	  if (content in keyframeCache)
-	    { return keyframeCache[content] }
-
-	  var name = classPrefix + count$1++;
-	  keyframeCache[content] = name;
-	  insert('@keyframes ' + name + '{' + content + '}');
-
-	  return name
-	}
-
-	function parse(input, value) {
-	  var obj;
-
-	  if (typeof input === 'string') {
-	    if (typeof value === 'string' || typeof value === 'number')
-	      { return (( obj = {}, obj[input] = value, obj )) }
-
-	    return stringToObject(input)
-	  } else if (isTagged(input)) {
-	    return stringToObject(raw(input, arguments))
-	  }
-
-	  return input.__style || sanitize(input)
-	}
-
-	function isTagged(input) {
-	  return Array.isArray(input) && typeof input[0] === 'string'
-	}
-
-	function raw(input, args) {
-	  var str = '';
-	  for (var i = 0; i < input.length; i++)
-	    { str += input[i] + (args[i + 1] || args[i + 1] === 0 ? args[i + 1] : ''); }
-	  return str
-	}
-
-	function sanitize(styles) {
-	  return Object.keys(styles).reduce(function (acc, key) {
-	    var value = styles[key];
-	    key = shorts[key] || key;
-
-	    if (!value && value !== 0 && value !== '')
-	      { return acc }
-
-	    if (key === 'content' && value.charAt(0) !== '"')
-	      { acc[key] = '"' + value + '"'; }
-	    else if (typeof value === 'object')
-	      { acc[key] = sanitize(value); }
-	    else
-	      { add(acc, key, value); }
-
-	    return acc
-	  }, {})
-	}
-
 	function curry(fn, args = []){
 	  return (..._args) =>
 	    (rest => rest.length >= fn.length ? fn(...rest) : curry(fn, rest))([
@@ -4361,14 +3717,664 @@
 	    return JSON.parse(str);
 	}
 
+	var pseudos = [
+	  ':active',
+	  ':any',
+	  ':checked',
+	  ':default',
+	  ':disabled',
+	  ':empty',
+	  ':enabled',
+	  ':first',
+	  ':first-child',
+	  ':first-of-type',
+	  ':fullscreen',
+	  ':focus',
+	  ':hover',
+	  ':indeterminate',
+	  ':in-range',
+	  ':invalid',
+	  ':last-child',
+	  ':last-of-type',
+	  ':left',
+	  ':link',
+	  ':only-child',
+	  ':only-of-type',
+	  ':optional',
+	  ':out-of-range',
+	  ':read-only',
+	  ':read-write',
+	  ':required',
+	  ':right',
+	  ':root',
+	  ':scope',
+	  ':target',
+	  ':valid',
+	  ':visited',
+
+	  // With value
+	  ':dir',
+	  ':lang',
+	  ':not',
+	  ':nth-child',
+	  ':nth-last-child',
+	  ':nth-last-of-type',
+	  ':nth-of-type',
+
+	  // Elements
+	  '::after',
+	  '::before',
+	  '::first-letter',
+	  '::first-line',
+	  '::selection',
+	  '::backdrop',
+	  '::placeholder',
+	  '::marker',
+	  '::spelling-error',
+	  '::grammar-error'
+	];
+
+	var popular = {
+	  ai : 'alignItems',
+	  b  : 'bottom',
+	  bc : 'backgroundColor',
+	  br : 'borderRadius',
+	  bs : 'boxShadow',
+	  bi : 'backgroundImage',
+	  c  : 'color',
+	  d  : 'display',
+	  f  : 'float',
+	  fd : 'flexDirection',
+	  ff : 'fontFamily',
+	  fs : 'fontSize',
+	  h  : 'height',
+	  jc : 'justifyContent',
+	  l  : 'left',
+	  lh : 'lineHeight',
+	  ls : 'letterSpacing',
+	  m  : 'margin',
+	  mb : 'marginBottom',
+	  ml : 'marginLeft',
+	  mr : 'marginRight',
+	  mt : 'marginTop',
+	  o  : 'opacity',
+	  p  : 'padding',
+	  pb : 'paddingBottom',
+	  pl : 'paddingLeft',
+	  pr : 'paddingRight',
+	  pt : 'paddingTop',
+	  r  : 'right',
+	  t  : 'top',
+	  ta : 'textAlign',
+	  td : 'textDecoration',
+	  tt : 'textTransform',
+	  w  : 'width'
+	};
+
+	var cssProperties = ['float'].concat(Object.keys(
+	  typeof document === 'undefined'
+	    ? {}
+	    : findWidth(document.documentElement.style)
+	).filter(function (p) { return p.indexOf('-') === -1 && p !== 'length'; }));
+
+	function findWidth(obj) {
+	  return obj
+	    ? obj.hasOwnProperty('width')
+	      ? obj
+	      : findWidth(Object.getPrototypeOf(obj))
+	    : {}
+	}
+
+	var isProp = /^-?-?[a-z][a-z-_0-9]*$/i;
+
+	var memoize = function (fn, cache) {
+	  if ( cache === void 0 ) cache = {};
+
+	  return function (item) { return item in cache
+	    ? cache[item]
+	    : cache[item] = fn(item); };
+	};
+
+	function add(style, prop, values) {
+	  if (prop in style) // Recursively increase specificity
+	    { add(style, '!' + prop, values); }
+	  else
+	    { style[prop] = formatValues(prop, values); }
+	}
+
+	var vendorMap = Object.create(null, {});
+	var vendorValuePrefix = Object.create(null, {});
+
+	var vendorRegex = /^(o|O|ms|MS|Ms|moz|Moz|webkit|Webkit|WebKit)([A-Z])/;
+
+	var appendPx = memoize(function (prop) {
+	  var el = document.createElement('div');
+
+	  try {
+	    el.style[prop] = '1px';
+	    el.style.setProperty(prop, '1px');
+	    return el.style[prop].slice(-3) === '1px' ? 'px' : ''
+	  } catch (err) {
+	    return ''
+	  }
+	}, {
+	  flex: '',
+	  boxShadow: 'px',
+	  border: 'px',
+	  borderTop: 'px',
+	  borderRight: 'px',
+	  borderBottom: 'px',
+	  borderLeft: 'px'
+	});
+
+	function lowercaseFirst(string) {
+	  return string.charAt(0).toLowerCase() + string.slice(1)
+	}
+
+	function assign(obj, obj2) {
+	  for (var key in obj2) {
+	    if (obj2.hasOwnProperty(key)) {
+	      obj[key] = typeof obj2[key] === 'string'
+	        ? obj2[key]
+	        : assign(obj[key] || {}, obj2[key]);
+	    }
+	  }
+	  return obj
+	}
+
+	var hyphenSeparator = /-([a-z])/g;
+	function hyphenToCamelCase(hyphen) {
+	  return hyphen.slice(hyphen.charAt(0) === '-' ? 1 : 0).replace(hyphenSeparator, function(match) {
+	    return match[1].toUpperCase()
+	  })
+	}
+
+	var camelSeparator = /(\B[A-Z])/g;
+	function camelCaseToHyphen(camelCase) {
+	  return camelCase.replace(camelSeparator, '-$1').toLowerCase()
+	}
+
+	var initialMatch = /([A-Z])/g;
+	function initials(camelCase) {
+	  return camelCase.charAt(0) + (camelCase.match(initialMatch) || []).join('').toLowerCase()
+	}
+
+	var ampersandMatch = /&/g;
+	function objectToRules(style, selector, suffix, single) {
+	  if ( suffix === void 0 ) suffix = '';
+
+	  var base = {};
+	  var extra = suffix.indexOf('&') > -1 && suffix.indexOf(',') === -1 ? '' : '&';
+	  var rules = [];
+
+	  Object.keys(style).forEach(function (prop) {
+	    if (prop.charAt(0) === '@')
+	      { rules.push(prop + '{' + objectToRules(style[prop], selector, suffix, single).join('') + '}'); }
+	    else if (typeof style[prop] === 'object')
+	      { rules = rules.concat(objectToRules(style[prop], selector, suffix + prop, single)); }
+	    else
+	      { base[prop] = style[prop]; }
+	  });
+
+	  if (Object.keys(base).length) {
+	    rules.unshift(
+	      ((single || (suffix.charAt(0) === ' ') ? '' : '&') + extra + suffix).replace(ampersandMatch, selector).trim() +
+	      '{' + stylesToCss(base) + '}'
+	    );
+	  }
+
+	  return rules
+	}
+
+	var selectorSplit = /,(?=(?:(?:[^"]*"){2})*[^"]*$)/;
+
+	function stylesToCss(style) {
+	  return Object.keys(style).reduce(function (acc, prop) { return acc + propToString(prop.charAt(0) === '!' ? prop.slice(1) : prop, style[prop]); }
+	  , '')
+	}
+
+	function propToString(prop, value) {
+	  prop = prop in vendorMap ? vendorMap[prop] : prop;
+	  return (vendorRegex.test(prop) ? '-' : '')
+	    + (cssVar(prop)
+	      ? prop
+	      : camelCaseToHyphen(prop)
+	    )
+	    + ':'
+	    + value
+	    + ';'
+	}
+
+	function formatValues(prop, value) {
+	  return Array.isArray(value)
+	    ? value.map(function (v) { return formatValue(prop, v); }).join(' ')
+	    : typeof value === 'string'
+	      ? formatValues(prop, value.split(' '))
+	      : formatValue(prop, value)
+	}
+
+	function formatValue(prop, value) {
+	  return value in vendorValuePrefix
+	    ? vendorValuePrefix[value]
+	    : value + (isNaN(value) || value === null || value === 0 || value === '0' || typeof value === 'boolean' || cssVar(prop) ? '' : appendPx(prop))
+	}
+
+	function cssVar(prop) {
+	  return prop.charAt(0) === '-' && prop.charAt(1) === '-'
+	}
+
+	var classPrefix = 'b' + ('000' + ((Math.random() * 46656) | 0).toString(36)).slice(-3) +
+	                    ('000' + ((Math.random() * 46656) | 0).toString(36)).slice(-3);
+
+	var styleSheet = typeof document === 'object' && document.createElement('style');
+	styleSheet && document.head && document.head.appendChild(styleSheet);
+	styleSheet && (styleSheet.id = classPrefix);
+
+	var sheet = styleSheet && styleSheet.sheet;
+
+	var debug = false;
+	var classes = Object.create(null, {});
+	var rules = [];
+	var count = 0;
+
+	function setDebug(d) {
+	  debug = d;
+	}
+
+	function getSheet() {
+	  var content = rules.join('');
+	  rules = [];
+	  classes = Object.create(null, {});
+	  count = 0;
+	  return content
+	}
+
+	function getRules() {
+	  return rules
+	}
+
+	function insert(rule, index) {
+	  rules.push(rule);
+
+	  if (debug)
+	    { return styleSheet.textContent = rules.join('\n') }
+
+	  try {
+	    sheet && sheet.insertRule(rule, arguments.length > 1
+	      ? index
+	      : sheet.cssRules.length);
+	  } catch (e) {
+	    // Ignore thrown errors in eg. firefox for unsupported strings (::-webkit-inner-spin-button)
+	  }
+	}
+
+	function createClass(style) {
+	  var json = JSON.stringify(style);
+
+	  if (json in classes)
+	    { return classes[json] }
+
+	  var className = classPrefix + (++count)
+	      , rules = objectToRules(style, '.' + className);
+
+	  for (var i = 0; i < rules.length; i++)
+	    { insert(rules[i]); }
+
+	  classes[json] = className;
+
+	  return className
+	}
+
+	/* eslint no-invalid-this: 0 */
+
+	var shorts = Object.create(null);
+
+	function bss(input, value) {
+	  var b = chain(bss);
+	  input && assign(b.__style, parse.apply(null, arguments));
+	  return b
+	}
+
+	function setProp(prop, value) {
+	  Object.defineProperty(bss, prop, {
+	    configurable: true,
+	    value: value
+	  });
+	}
+
+	Object.defineProperties(bss, {
+	  __style: {
+	    configurable: true,
+	    writable: true,
+	    value: {}
+	  },
+	  valueOf: {
+	    configurable: true,
+	    writable: true,
+	    value: function() {
+	      return '.' + this.class
+	    }
+	  },
+	  toString: {
+	    configurable: true,
+	    writable: true,
+	    value: function() {
+	      return this.class
+	    }
+	  }
+	});
+
+	setProp('setDebug', setDebug);
+
+	setProp('$keyframes', keyframes);
+	setProp('$media', $media);
+	setProp('$import', $import);
+	setProp('$nest', $nest);
+	setProp('getSheet', getSheet);
+	setProp('getRules', getRules);
+	setProp('helper', helper);
+	setProp('css', css);
+	setProp('classPrefix', classPrefix);
+
+	function chain(instance) {
+	  var newInstance = Object.create(bss, {
+	    __style: {
+	      value: assign({}, instance.__style)
+	    },
+	    style: {
+	      enumerable: true,
+	      get: function() {
+	        var this$1$1 = this;
+
+	        return Object.keys(this.__style).reduce(function (acc, key) {
+	          if (typeof this$1$1.__style[key] === 'number' || typeof this$1$1.__style[key] === 'string')
+	            { acc[key.charAt(0) === '!' ? key.slice(1) : key] = this$1$1.__style[key]; }
+	          return acc
+	        }, {})
+	      }
+	    }
+	  });
+
+	  if (instance === bss)
+	    { bss.__style = {}; }
+
+	  return newInstance
+	}
+
+	cssProperties.forEach(function (prop) {
+	  var vendor = prop.match(vendorRegex);
+	  if (vendor) {
+	    var unprefixed = lowercaseFirst(prop.replace(vendorRegex, '$2'));
+	    if (cssProperties.indexOf(unprefixed) === -1) {
+	      if (unprefixed === 'flexDirection')
+	        { vendorValuePrefix.flex = '-' + vendor[1].toLowerCase() + '-flex'; }
+
+	      vendorMap[unprefixed] = prop;
+	      setProp(unprefixed, setter(prop));
+	      setProp(short(unprefixed), bss[unprefixed]);
+	      return
+	    }
+	  }
+
+	  setProp(prop, setter(prop));
+	  setProp(short(prop), bss[prop]);
+	});
+
+	setProp('content', function Content(arg) {
+	  var b = chain(this);
+	  arg === null || arg === undefined || arg === false
+	    ? delete b.__style.content
+	    : b.__style.content = '"' + arg + '"';
+	  return b
+	});
+
+	Object.defineProperty(bss, 'class', {
+	  set: function(value) {
+	    this.__class = value;
+	  },
+	  get: function() {
+	    return this.__class || createClass(this.__style)
+	  }
+	});
+
+	function $media(value, style) {
+	  var b = chain(this);
+	  if (value)
+	    { b.__style['@media ' + value] = parse(style); }
+
+	  return b
+	}
+
+	var hasUrl = /^('|"|url\('|url\(")/i;
+	function $import(value) {
+	  value && insert('@import '
+	    + (hasUrl.test(value) ? value : '"' + value + '"')
+	    + ';', 0);
+
+	  return chain(this)
+	}
+
+	function $nest(selector, properties) {
+	  var b = chain(this);
+	  if (arguments.length === 1)
+	    { Object.keys(selector).forEach(function (x) { return addNest(b.__style, x, selector[x]); }); }
+	  else if (selector)
+	    { addNest(b.__style, selector, properties); }
+
+	  return b
+	}
+
+	function addNest(style, selector, properties) {
+	  var prop = selector.split(selectorSplit).map(function (x) {
+	    x = x.trim();
+	    return (x.charAt(0) === ':' || x.charAt(0) === '[' ? '' : ' ') + x
+	  }).join(',&');
+
+	  prop in style
+	    ? assign(style[prop], parse(properties))
+	    : style[prop] = parse(properties);
+	}
+
+	pseudos.forEach(function (name) { return setProp('$' + hyphenToCamelCase(name.replace(/:/g, '')), function Pseudo(value, style) {
+	    var b = chain(this);
+	    if (isTagged(value))
+	      { b.__style[name] = parse.apply(null, arguments); }
+	    else if (value || style)
+	      { b.__style[name + (style ? '(' + value + ')' : '')] = parse(style || value); }
+	    return b
+	  }); }
+	);
+
+	function setter(prop) {
+	  return function CssProperty(value) {
+	    var b = chain(this);
+	    if (!value && value !== 0)
+	      { delete b.__style[prop]; }
+	    else if (arguments.length > 0)
+	      { add(b.__style, prop, Array.prototype.slice.call(arguments)); }
+
+	    return b
+	  }
+	}
+
+	function css(selector, style) {
+	  if (arguments.length === 1)
+	    { Object.keys(selector).forEach(function (key) { return addCss(key, selector[key]); }); }
+	  else
+	    { addCss(selector, style); }
+
+	  return chain(this)
+	}
+
+	function addCss(selector, style) {
+	  objectToRules(parse(style), selector, '', true).forEach(function (rule) { return insert(rule); });
+	}
+
+	function helper(name, styling) {
+	  if (arguments.length === 1)
+	    { return Object.keys(name).forEach(function (key) { return helper(key, name[key]); }) }
+
+	  delete bss[name]; // Needed to avoid weird get calls in chrome
+
+	  if (typeof styling === 'function') {
+	    helper[name] = styling;
+	    Object.defineProperty(bss, name, {
+	      configurable: true,
+	      value: function Helper(input) {
+	        var b = chain(this);
+	        var result = isTagged(input)
+	          ? styling(raw(input, arguments))
+	          : styling.apply(null, arguments);
+	        assign(b.__style, result.__style);
+	        return b
+	      }
+	    });
+	  } else {
+	    helper[name] = parse(styling);
+	    Object.defineProperty(bss, name, {
+	      configurable: true,
+	      get: function() {
+	        var b = chain(this);
+	        assign(b.__style, parse(styling));
+	        return b
+	      }
+	    });
+	  }
+	}
+
+	bss.helper('$animate', function (value, props) { return bss.animation(bss.$keyframes(props) + ' ' + value); }
+	);
+
+	function short(prop) {
+	  var acronym = initials(prop)
+	      , short = popular[acronym] && popular[acronym] !== prop ? prop : acronym;
+
+	  shorts[short] = prop;
+	  return short
+	}
+
+	var blockEndMatch = /;(?![^("]*[)"])|\n/;
+	var commentsMatch = /\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*(?![^("]*[)"])/g;
+	var propSeperator = /[ :]+/;
+
+	var stringToObject = memoize(function (string) {
+	  var last = ''
+	    , prev;
+
+	  return string.trim().replace(commentsMatch, '').split(blockEndMatch).reduce(function (acc, line) {
+	    if (!line)
+	      { return acc }
+	    line = last + line.trim();
+	    var ref = line.replace(propSeperator, ' ').split(' ');
+	    var key = ref[0];
+	    var tokens = ref.slice(1);
+
+	    last = line.charAt(line.length - 1) === ',' ? line : '';
+	    if (last)
+	      { return acc }
+
+	    if (line.charAt(0) === ',' || !isProp.test(key)) {
+	      acc[prev] += ' ' + line;
+	      return acc
+	    }
+
+	    if (!key)
+	      { return acc }
+
+	    var prop = key.charAt(0) === '-' && key.charAt(1) === '-'
+	      ? key
+	      : hyphenToCamelCase(key);
+
+	    prev = shorts[prop] || prop;
+
+	    if (key in helper) {
+	      typeof helper[key] === 'function'
+	        ? assign(acc, helper[key].apply(helper, tokens).__style)
+	        : assign(acc, helper[key]);
+	    } else if (prop in helper) {
+	      typeof helper[prop] === 'function'
+	        ? assign(acc, helper[prop].apply(helper, tokens).__style)
+	        : assign(acc, helper[prop]);
+	    } else if (tokens.length > 0) {
+	      add(acc, prev, tokens);
+	    }
+
+	    return acc
+	  }, {})
+	});
+
+	var count$1 = 0;
+	var keyframeCache = {};
+
+	function keyframes(props) {
+	  var content = Object.keys(props).reduce(function (acc, key) { return acc + key + '{' + stylesToCss(parse(props[key])) + '}'; }
+	  , '');
+
+	  if (content in keyframeCache)
+	    { return keyframeCache[content] }
+
+	  var name = classPrefix + count$1++;
+	  keyframeCache[content] = name;
+	  insert('@keyframes ' + name + '{' + content + '}');
+
+	  return name
+	}
+
+	function parse(input, value) {
+	  var obj;
+
+	  if (typeof input === 'string') {
+	    if (typeof value === 'string' || typeof value === 'number')
+	      { return (( obj = {}, obj[input] = value, obj )) }
+
+	    return stringToObject(input)
+	  } else if (isTagged(input)) {
+	    return stringToObject(raw(input, arguments))
+	  }
+
+	  return input.__style || sanitize(input)
+	}
+
+	function isTagged(input) {
+	  return Array.isArray(input) && typeof input[0] === 'string'
+	}
+
+	function raw(input, args) {
+	  var str = '';
+	  for (var i = 0; i < input.length; i++)
+	    { str += input[i] + (args[i + 1] || args[i + 1] === 0 ? args[i + 1] : ''); }
+	  return str
+	}
+
+	function sanitize(styles) {
+	  return Object.keys(styles).reduce(function (acc, key) {
+	    var value = styles[key];
+	    key = shorts[key] || key;
+
+	    if (!value && value !== 0 && value !== '')
+	      { return acc }
+
+	    if (key === 'content' && value.charAt(0) !== '"')
+	      { acc[key] = '"' + value + '"'; }
+	    else if (typeof value === 'object')
+	      { acc[key] = sanitize(value); }
+	    else
+	      { add(acc, key, value); }
+
+	    return acc
+	  }, {})
+	}
+
 	const colors = {
 	    red: "rgb(125, 52, 37)",
+	    lightred: "#db5f5f",
 	    darkGrey: "rgb(32,32,32)",
 	    grey: "rgb(64,64,64)",
+	    lightgrey: "rgb(92,92,92)",
 	};
 	const style_base = {
 	    input: bss `
-    ff Quattrocento, serif
+    ff Arial, sans-serif
     fs 1.2rem
     lh 1.6rem
     p 0.4rem 0.6rem
@@ -4380,6 +4386,13 @@
     border-bottom 2px dotted ${colors.red}
   `.$hover `
     bc ${colors.grey}
+  `,
+	    label: bss `
+    display block
+    p 0.4rem 0.6rem
+    m 0.4rem 0.6rem
+
+    font-variant small-caps
   `,
 	    tags: bss `
     d flex
@@ -4395,8 +4408,9 @@
   `,
 	    select: bss `
     border-bottom: 2px dotted ${colors.red}
-  `,
-	    button: bss `
+  `.$disabled `
+    color: ${colors.lightgrey}
+    font-style italic
   `,
 	    hr: bss `
     bc rgba(0,0,0,0)
@@ -4441,7 +4455,15 @@
     font-variant small-caps
   `,
 	};
-	const style = Object.assign(Object.assign({}, style_base), { select: style_base.select + style_base.input, abilities_block: bss `
+	const style = Object.assign(Object.assign({}, style_base), { textarea: style_base.input + bss `
+    resize vertical
+  `, select: style_base.select + style_base.input, select_block: bss ``, button: style_base.input + bss `
+    border 2px solid ${colors.red}
+    font-weight bolder
+    font-style italic
+    background inherit
+    color ${colors.lightgrey}
+  `, abilities_block: bss `
     display flex
     flex-direction row
     justify-content center
@@ -4458,36 +4480,405 @@
     fw bolder
     font-variant small-caps
   `, ability_modifier_score: bss `
-    font-style italic
+    font-size 1.3em
   `.$hover `
     b ${colors.grey}
+  `, actions_block: bss `
+    display grid
+    grid-template-columns 1fr 1fr 1fr
+    grid-template-rows auto
+    grid-column-gap 2rem
+  `, action_block: bss `
+    align-self start
+    display grid
+    grid-template-columns 1fr 1fr 1fr
+    grid-template-rows auto
+    grid-column-gap 0.6rem
+    grid-row-gap 0.8rem
+  `, action_cell: bss `
+    align-self start
+    margin 0
+    padding 0.6rem 0
+  `, action_cell_wide: bss `
+    align-self start
+    grid-column 1 / 4
+    margin 0
+    padding 0.6rem 0
+  `, select_tag_component: bss `
+    min-width 16rem
+  `, main: bss `
+    ff Arial, sans-serif
+    fs 1.0rem
+    lh 1.6rem
+  `, permalink: bss `
+    font-weight bold
+    font-style italic
+    color ${colors.red}
+  `.$hover `
+    color ${colors.lightred}
+  `.$active `
+  `.$visited `
+    color ${colors.lightred}
+  `, compendium_header: bss `
+    padding-top: 0.6rem
+    padding-bottom: 0.6rem
+  `, compendium_row: bss `
+    display grid
+    grid-template-columns repeat(6, 1fr) 2rem
+  `, compendium_cell: bss `
+    justify-self: stretch
+    align-self: center
+    padding-left: 0.6rem
   ` });
+	const grid = {
+	    container: (size, rest) => bss `
+    display grid
+    grid-template-columns repeat(${size}, 1fr) ${rest}
+    grid-template-rows auto
+  `,
+	};
 	const el = {
 	    input: "input" + style.input,
-	    tags: "span" + style.tags,
-	    tag: "span" + style.tag,
+	    textarea: "textarea" + style.textarea,
 	    select: "select" + style.select,
+	    select_block: "div" + style.select_block,
 	    button: "button" + style.button,
+	    option: "option",
 	    hr: "hr" + style.hr,
 	    table: "table" + style.table,
 	    table_row: "tr" + style.table_row,
 	    table_cell: "td" + style.table_cell,
+	    label: "label" + style.label,
 	    // Component Elements
+	    //
+	    //
+	    main: ".little-creature-maker" + style.main,
+	    tags: "span" + style.tags,
+	    tag: "span" + style.tag,
+	    remove: "span" + style.remove,
 	    crc: "div" + style.small,
 	    stat_block: "div",
-	    compendium: "table" + style.table,
-	    compendium_header: "thead" + style.table_row + style.light_bg,
-	    compendium_row: "tr" + style.table_row + style.hilight_bg,
-	    compendium_cell: "td" + style.table_cell,
-	    remove: "span" + style.remove,
+	    compendium: "div",
+	    compendium_header: style.light_bg + style.compendium_header + style.compendium_row,
+	    compendium_row: "" + style.hilight_bg + style.compendium_row,
+	    compendium_cell: "" + style.compendium_cell,
 	    property_block: "div.property_block",
 	    property_line: "div.property_line",
 	    abilities_block: "div" + style.abilities_block,
 	    ability_modifiers: "div" + style.ability_modifiers,
 	    ability_modifier_stat: "span" + style.ability_modifier_stat,
 	    ability_modifier_score: "span" + style.ability_modifier_score,
+	    actions_block: "div" + style.actions_block,
+	    action_block: "div" + style.action_block,
+	    action_cell: "div" + style.action_cell,
+	    action_cell_wide: "div" + style.action_cell_wide,
 	    name_editor: "h1"
 	};
+
+	var streamExports$1 = {};
+	var stream$1 = {
+	  get exports(){ return streamExports$1; },
+	  set exports(v){ streamExports$1 = v; },
+	};
+
+	var streamExports = {};
+	var stream = {
+	  get exports(){ return streamExports; },
+	  set exports(v){ streamExports = v; },
+	};
+
+	/* eslint-disable */
+
+	(function (module) {
+	(function() {
+		/* eslint-enable */
+		Stream.SKIP = {};
+		Stream.lift = lift;
+		Stream.scan = scan;
+		Stream.merge = merge;
+		Stream.combine = combine;
+		Stream.scanMerge = scanMerge;
+		Stream["fantasy-land/of"] = Stream;
+
+		var warnedHalt = false;
+		Object.defineProperty(Stream, "HALT", {
+			get: function() {
+				warnedHalt || console.log("HALT is deprecated and has been renamed to SKIP");
+				warnedHalt = true;
+				return Stream.SKIP
+			}
+		});
+
+		function Stream(value) {
+			var dependentStreams = [];
+			var dependentFns = [];
+
+			function stream(v) {
+				if (arguments.length && v !== Stream.SKIP) {
+					value = v;
+					if (open(stream)) {
+						stream._changing();
+						stream._state = "active";
+						// Cloning the list to ensure it's still iterated in intended
+						// order
+						dependentStreams.slice().forEach(function(s, i) {
+							if (open(s)) s(this[i](value));
+						}, dependentFns.slice());
+					}
+				}
+
+				return value
+			}
+
+			stream.constructor = Stream;
+			stream._state = arguments.length && value !== Stream.SKIP ? "active" : "pending";
+			stream._parents = [];
+
+			stream._changing = function() {
+				if (open(stream)) stream._state = "changing";
+				dependentStreams.forEach(function(s) {
+					s._changing();
+				});
+			};
+
+			stream._map = function(fn, ignoreInitial) {
+				var target = ignoreInitial ? Stream() : Stream(fn(value));
+				target._parents.push(stream);
+				dependentStreams.push(target);
+				dependentFns.push(fn);
+				return target
+			};
+
+			stream.map = function(fn) {
+				return stream._map(fn, stream._state !== "active")
+			};
+
+			var end;
+			function createEnd() {
+				end = Stream();
+				end.map(function(value) {
+					if (value === true) {
+						stream._parents.forEach(function (p) {p._unregisterChild(stream);});
+						stream._state = "ended";
+						stream._parents.length = dependentStreams.length = dependentFns.length = 0;
+					}
+					return value
+				});
+				return end
+			}
+
+			stream.toJSON = function() { return value != null && typeof value.toJSON === "function" ? value.toJSON() : value };
+
+			stream["fantasy-land/map"] = stream.map;
+			stream["fantasy-land/ap"] = function(x) { return combine(function(s1, s2) { return s1()(s2()) }, [x, stream]) };
+
+			stream._unregisterChild = function(child) {
+				var childIndex = dependentStreams.indexOf(child);
+				if (childIndex !== -1) {
+					dependentStreams.splice(childIndex, 1);
+					dependentFns.splice(childIndex, 1);
+				}
+			};
+
+			Object.defineProperty(stream, "end", {
+				get: function() { return end || createEnd() }
+			});
+
+			return stream
+		}
+
+		function combine(fn, streams) {
+			var ready = streams.every(function(s) {
+				if (s.constructor !== Stream)
+					throw new Error("Ensure that each item passed to stream.combine/stream.merge/lift is a stream.")
+				return s._state === "active"
+			});
+			var stream = ready
+				? Stream(fn.apply(null, streams.concat([streams])))
+				: Stream();
+
+			var changed = [];
+
+			var mappers = streams.map(function(s) {
+				return s._map(function(value) {
+					changed.push(s);
+					if (ready || streams.every(function(s) { return s._state !== "pending" })) {
+						ready = true;
+						stream(fn.apply(null, streams.concat([changed])));
+						changed = [];
+					}
+					return value
+				}, true)
+			});
+
+			var endStream = stream.end.map(function(value) {
+				if (value === true) {
+					mappers.forEach(function(mapper) { mapper.end(true); });
+					endStream.end(true);
+				}
+				return undefined
+			});
+
+			return stream
+		}
+
+		function merge(streams) {
+			return combine(function() { return streams.map(function(s) { return s() }) }, streams)
+		}
+
+		function scan(fn, acc, origin) {
+			var stream = origin.map(function(v) {
+				var next = fn(acc, v);
+				if (next !== Stream.SKIP) acc = next;
+				return next
+			});
+			stream(acc);
+			return stream
+		}
+
+		function scanMerge(tuples, seed) {
+			var streams = tuples.map(function(tuple) { return tuple[0] });
+
+			var stream = combine(function() {
+				var changed = arguments[arguments.length - 1];
+				streams.forEach(function(stream, i) {
+					if (changed.indexOf(stream) > -1)
+						seed = tuples[i][1](seed, stream());
+				});
+
+				return seed
+			}, streams);
+
+			stream(seed);
+
+			return stream
+		}
+
+		function lift() {
+			var fn = arguments[0];
+			var streams = Array.prototype.slice.call(arguments, 1);
+			return merge(streams).map(function(streams) {
+				return fn.apply(undefined, streams)
+			})
+		}
+
+		function open(s) {
+			return s._state === "pending" || s._state === "active" || s._state === "changing"
+		}
+
+		module["exports"] = Stream;
+
+		}());
+	} (stream));
+
+	(function (module) {
+
+		module.exports = streamExports;
+	} (stream$1));
+
+	var Stream = /*@__PURE__*/getDefaultExportFromCjs(streamExports$1);
+
+	function capitalize(str) {
+	    return str.charAt(0).toUpperCase() + str.slice(1);
+	}
+	function formatString(str) {
+	    return str
+	        .replace(/[^a-z0-9\-\(\)]/ig, " ")
+	        .replace(/\b([a-zÁ-ú]{3,})/g, capitalize);
+	}
+
+	const OptionComponent = {
+	    view({ attrs: { value, disabled }, children }) {
+	        return mithril(el.option, {
+	            key: value,
+	            value,
+	            disabled,
+	        }, children);
+	    },
+	};
+	function Select() {
+	    const selectedIndex = Stream(0);
+	    return {
+	        view({ attrs: { name, current, choices, onchange, preventDefault, label, style, id } }) {
+	            selectedIndex(choices.indexOf(String(current)) + 1);
+	            return mithril(el.select + (style || ""), {
+	                id,
+	                name,
+	                selectedIndex: selectedIndex(),
+	                onchange(e) {
+	                    if (preventDefault)
+	                        e.preventDefault();
+	                    selectedIndex();
+	                    onchange(this.value);
+	                },
+	            }, mithril(OptionComponent, {
+	                value: '_label',
+	                disabled: true,
+	            }, label), ...choices.map((choice) => mithril(OptionComponent, { value: choice }, formatString(choice))));
+	        },
+	    };
+	}
+	function SelectLabel() {
+	    const id = Math.random().toString(36).slice(6);
+	    return {
+	        view(vnode) {
+	            return mithril(el.select_block, mithril(el.label, { for: id }, vnode.attrs.label), mithril(Select, Object.assign({ id }, vnode.attrs)));
+	        }
+	    };
+	}
+
+	const SelectTag = {
+	    view({ attrs: { label, name, choices, selected, onchange } }) {
+	        const items = choices
+	            .filter((i) => selected.indexOf(i) < 0)
+	            .map(i => i.toString());
+	        return [
+	            mithril(Select, {
+	                style: style.select_tag_component,
+	                name,
+	                label,
+	                current: "",
+	                choices: [...items],
+	                onchange(val) {
+	                    onchange(selected.concat(val));
+	                },
+	                preventDefault: true
+	            }),
+	            mithril(el.tags, ...map((tag) => mithril(el.tag, {
+	                onclick(e) {
+	                    e.preventDefault();
+	                    const data = selected.filter(x => x !== tag);
+	                    onchange(data);
+	                }
+	            }, tag), selected))
+	        ];
+	    }
+	};
+
+	function Textarea() {
+	    const text = Stream("");
+	    return {
+	        oncreate({ dom }) {
+	            const d = dom;
+	            text
+	                .map(() => {
+	                d.style.height = '';
+	                d.style.height = dom.scrollHeight + 'px';
+	            });
+	        },
+	        view({ attrs: { name, placeholder, value, oninput, style } }) {
+	            return mithril(el.textarea + (style || ""), {
+	                name,
+	                placeholder,
+	                oninput() {
+	                    text(this.value);
+	                    oninput(this.value);
+	                }
+	            }, value);
+	        },
+	    };
+	}
+
 	function formatModScore(mod) {
 	    if (mod < 0) {
 	        return " - " + Math.abs(mod);
@@ -4500,64 +4891,12 @@
 	    return modToAbilityScore(score) +
 	        " (" + formatModScore(score) + ") ";
 	}
-	function formatString(str) {
-	    return str
-	        .replace(/[^a-z0-9\-]/ig, " ")
-	        .split(" ")
-	        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-	        .join(" ");
-	}
-	const SelectComponent = {
-	    view({ attrs: { name, current, choices, onchange, preventDefault, label } }) {
-	        return mithril(el.select, {
-	            name,
-	            onchange(e) {
-	                if (preventDefault)
-	                    e.preventDefault();
-	                onchange(e.target.value);
-	            },
-	        }, mithril("option", { key: -1, disabled: true, selected: current == "" }, label), ...choices.map((choice) => mithril("option", {
-	            key: choice,
-	            value: choice,
-	            selected: choice == current
-	        }, formatString(choice))));
-	    }
-	};
-	const SelectTagComponent = {
-	    view({ attrs: { label, name, choices, selected, onchange } }) {
-	        const items = choices
-	            .filter((i) => selected.indexOf(i) < 0);
-	        return [
-	            mithril(SelectComponent, {
-	                name,
-	                label,
-	                current: "",
-	                choices: [...items],
-	                onchange(val) {
-	                    onchange(selected.concat(val));
-	                },
-	                preventDefault: true
-	            }),
-	            mithril(el.tags, ...map((i) => mithril(el.tag, {
-	                onclick(e) {
-	                    e.preventDefault();
-	                    const data = selected.filter(x => x !== i);
-	                    onchange(data);
-	                }
-	            }, i), selected))
-	        ];
-	    }
-	};
-	const SelectLevelComponent = {
-	    view() {
-	        return mithril(SelectComponent, {
-	            name: "level",
-	            current: state.current.level.toString(),
-	            choices: map((i) => i.toString(), range(-5, 36)),
-	            onchange(lvl) {
-	                state.set({ level: parseInt(lvl) });
-	            },
-	        });
+	const Permalink = {
+	    view({ attrs: { sb } }) {
+	        return mithril(mithril.route.Link, {
+	            class: style.permalink,
+	            href: "/" + encode(sb)
+	        }, "Permalink");
 	    }
 	};
 	const NameEditorComponent = {
@@ -4588,59 +4927,76 @@
 	const AttackComponent = {
 	    view({ attrs: { attack } }) {
 	        const dmg = attackDamage(attack);
-	        return mithril(".attack-form", { key: attack.id }, mithril(el.input, {
+	        return mithril(el.action_block, { key: attack.id }, mithril(el.input + style.action_cell_wide, {
 	            name: "attack",
 	            placeholder: "name",
 	            value: attack.name,
 	            onchange(e) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { name: e.target['value'] }));
 	            }
-	        }), mithril(el.input, {
+	        }), mithril(Textarea, {
+	            style: style.action_cell_wide,
 	            name: "description",
 	            placeholder: "description",
 	            value: attack.description,
-	            onchange(e) {
-	                state.setAttack(Object.assign(Object.assign({}, attack), { description: e.target['value'] }));
+	            oninput(val) {
+	                state.setAttack(Object.assign(Object.assign({}, attack), { description: val }));
 	            },
-	        }), mithril(SelectComponent, {
+	        }), mithril(Select, {
+	            style: style.action_cell,
 	            name: "die_num",
 	            current: attack.die_num,
 	            choices: range(1, 21).map(String),
 	            onchange(die_num) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { die_num: parseInt(die_num) }));
 	            }
-	        }), mithril(SelectComponent, {
+	        }), mithril(Select, {
+	            style: style.action_cell,
 	            name: "die",
 	            current: attack.die,
 	            choices: dies,
 	            onchange(die) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { die }));
 	            }
-	        }), mithril(SelectComponent, {
+	        }), mithril(Select, {
+	            style: style.action_cell,
 	            name: "mod",
 	            current: attack.mod.toString(),
 	            choices: range(0, 61).map(String),
 	            onchange(mod) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { mod: parseInt(mod) }));
 	            }
-	        }), mithril(SelectComponent, {
+	        }), mithril(Select, {
+	            style: style.action_cell_wide,
 	            name: "type",
 	            current: attack.type,
 	            choices: damage_types,
 	            onchange(type) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { type }));
 	            }
-	        }), mithril(el.table, mithril(el.table_row, mithril(el.table_cell, "max: "), mithril(el.table_cell, dmg.max)), mithril(el.table_row, mithril(el.table_cell, "avg: "), mithril(el.table_cell, dmg.avg)), mithril(el.table_row, mithril(el.table_cell, "min: "), mithril(el.table_cell, dmg.min))), mithril(el.remove, {
+	        }), mithril(el.action_cell, "max: ", mithril("b", dmg.max)), mithril(el.action_cell, "avg: ", mithril("b", dmg.avg)), mithril(el.action_cell, "min: ", mithril("b", dmg.min)), mithril(el.remove + style.action_cell_wide, {
 	            onclick() {
 	                state.removeAttack(attack);
 	            }
-	        }, "x"));
+	        }, "remove"));
+	    }
+	};
+	const ActionsBlock = {
+	    view({ attrs: { sb } }) {
+	        return mithril(".actions", [
+	            mithril("h3", "Actions", mithril(el.button, {
+	                onclick() {
+	                    state.newAttack();
+	                }
+	            }, "new")),
+	            mithril(el.actions_block, sb.attacks.map((attack) => mithril(AttackComponent, { attack }))),
+	        ]);
 	    }
 	};
 	const PropertyLines = {
 	    view() {
 	        return [
-	            mithril(el.property_line, mithril(SelectTagComponent, {
+	            mithril(el.property_line, mithril(SelectTag, {
 	                label: "Damage Immunities",
 	                name: "damage-immunities",
 	                choices: damage_types,
@@ -4649,7 +5005,7 @@
 	                    state.set({ properties: { damage_immunities: val } });
 	                },
 	            })),
-	            mithril(el.property_line, mithril(SelectTagComponent, {
+	            mithril(el.property_line, mithril(SelectTag, {
 	                label: "Damage Resistances",
 	                name: "senses",
 	                choices: damage_types,
@@ -4658,7 +5014,7 @@
 	                    state.set({ properties: { damage_resistances: val } });
 	                },
 	            })),
-	            mithril(el.property_line, mithril(SelectTagComponent, {
+	            mithril(el.property_line, mithril(SelectTag, {
 	                label: "Damage Weaknesses",
 	                name: "damage-weaknesses",
 	                choices: damage_types,
@@ -4667,7 +5023,7 @@
 	                    state.set({ properties: { damage_weaknesses: val } });
 	                },
 	            })),
-	            mithril(el.property_line, mithril(SelectTagComponent, {
+	            mithril(el.property_line, mithril(SelectTag, {
 	                label: "Condition Immunities",
 	                name: "condition-immunities",
 	                choices: conditions,
@@ -4676,7 +5032,7 @@
 	                    state.set({ properties: { condition_immunities: val } });
 	                },
 	            })),
-	            mithril(el.property_line, mithril(SelectTagComponent, {
+	            mithril(el.property_line, mithril(SelectTag, {
 	                label: "Condition Weaknesses",
 	                name: "condition-weaknesses",
 	                choices: conditions,
@@ -4685,7 +5041,7 @@
 	                    state.set({ properties: { condition_weaknesses: val } });
 	                },
 	            })),
-	            mithril(el.property_line, mithril(SelectTagComponent, {
+	            mithril(el.property_line, mithril(SelectTag, {
 	                label: "Senses",
 	                name: "senses",
 	                choices: special_senses,
@@ -4694,32 +5050,16 @@
 	                    state.set({ properties: { special_senses: val } });
 	                },
 	            })),
-	            mithril(el.property_line, mithril(SelectTagComponent, {
+	            mithril(el.property_line, mithril(SelectTag, {
 	                label: "Languages",
 	                name: "languages",
 	                choices: languages,
 	                selected: state.current.properties.languages || [],
 	                onchange(val) {
-	                    state.current.properties.languages = val;
+	                    state.set({ properties: { languages: val } });
 	                }
 	            })),
 	        ];
-	    }
-	};
-	const ActionsBlock = {
-	    view({ attrs: { sb } }) {
-	        return mithril(".actions", [
-	            mithril("h3", "Actions"),
-	            mithril(el.hr),
-	            sb.attacks.map((attack) => {
-	                return mithril(AttackComponent, { attack });
-	            }),
-	            mithril("button[name=new-attack]", {
-	                onclick() {
-	                    state.newAttack();
-	                }
-	            }, "+"),
-	        ]);
 	    }
 	};
 	const SimpleCreatureJSON = {
@@ -4745,38 +5085,44 @@
 	                const val = document.getElementById("littleCreatureJSON").value;
 	                state.set(JSON.parse(val));
 	            }
-	        }, "import from JSON"), mithril(mithril.route.Link, {
-	            href: "/" + encode(state.current)
-	        }, "Permalink"));
+	        }, "import from JSON"), mithril(Permalink, { sb: state.current }));
 	    }
 	};
 	const StatBlockComponent = {
 	    view() {
-	        return mithril(".stat-block", mithril(el.crc, state.current.uid), mithril(el.hr), mithril(el.name_editor, mithril(NameEditorComponent)), mithril(el.property_line, mithril("span.level", "lvl ", mithril(SelectLevelComponent)), mithril(SelectComponent, {
+	        return mithril(".stat-block", mithril(el.crc, state.current.uid), mithril(el.hr), mithril(el.name_editor, mithril(NameEditorComponent)), mithril(el.property_line, { class: grid.container(6) }, mithril(SelectLabel, {
+	            name: "level",
+	            label: "Level",
+	            current: state.current.level.toString(),
+	            choices: map((i) => i.toString(), range(-5, 36)),
+	            onchange(lvl) {
+	                state.set({ level: parseInt(lvl) });
+	            },
+	        }), mithril(SelectLabel, {
 	            name: "role",
 	            label: "Role",
 	            onchange(val) { state.set({ role: val }); },
 	            current: state.current.role,
 	            choices: keys(roles),
-	        }), mithril(SelectComponent, {
+	        }), mithril(SelectLabel, {
 	            name: "modifier",
 	            label: "Modifier",
 	            onchange(val) { state.set({ modifier: val }); },
 	            current: state.current.modifier,
 	            choices: keys(modifiers),
-	        }), mithril(SelectComponent, {
+	        }), mithril(SelectLabel, {
 	            name: "size",
 	            label: "Size",
 	            onchange(val) { state.set({ size: val }); },
 	            current: state.current.size,
 	            choices: sizes,
-	        }), mithril(SelectComponent, {
+	        }), mithril(SelectLabel, {
 	            name: "category",
 	            label: "Category",
 	            onchange(val) { state.set({ category: val }); },
 	            current: state.current.category,
 	            choices: categories,
-	        }), mithril(SelectComponent, {
+	        }), mithril(SelectLabel, {
 	            name: "alignment",
 	            label: "Alignment",
 	            onchange(val) { state.set({ alignment: val }); },
@@ -4796,9 +5142,7 @@
 	                state.current = creature;
 	                mithril.route.set("/" + encode(creature));
 	            }
-	        }, mithril(el.compendium_cell, creature.uid), mithril(el.compendium_cell, creature.name), mithril(el.compendium_cell, creature.level), mithril(el.compendium_cell, creature.role), mithril(el.compendium_cell, creature.modifier), mithril(el.compendium_cell, mithril(mithril.route.Link, {
-	            href: "/" + encode(creature)
-	        }, "Permalink")), mithril(el.compendium_cell + style.remove, {
+	        }, mithril(el.compendium_cell, creature.uid), mithril(el.compendium_cell, creature.name), mithril(el.compendium_cell, creature.level), mithril(el.compendium_cell, creature.role), mithril(el.compendium_cell, creature.modifier), mithril(el.compendium_cell, mithril(Permalink, { sb: creature })), mithril(el.compendium_cell + style.remove, {
 	            onclick() { state.deleteFromCompendium(creature.uid); }
 	        }, "x")), values(state.list))));
 	    }
@@ -4817,11 +5161,7 @@
 	        state.init();
 	    },
 	    view() {
-	        return mithril(".little-creature-maker" + bss `
-      ff Quattrocento, sans-serif
-      fs 1.0rem
-      lh 1.6rem
-    `, [
+	        return mithril(el.main, [
 	            mithril(StatBlockComponent),
 	            mithril(SimpleCreatureCompendium),
 	        ]);
