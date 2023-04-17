@@ -175,6 +175,12 @@ export const style = {
   `.$visited`
     color ${colors.lightred}
   `,
+
+  base_properties: b`
+    display grid
+    grid-template-columns 1fr 1fr
+  `,
+
   compendium_header: b`
     padding-top: 0.6rem
     padding-bottom: 0.6rem
@@ -210,6 +216,7 @@ export const el: { [key: string]: string } = {
   table_row: "tr" + style.table_row,
   table_cell: "td" + style.table_cell,
   label: "label" + style.label,
+  div: "div",
   // Component Elements
   //
   //
@@ -222,6 +229,8 @@ export const el: { [key: string]: string } = {
   crc: "div" + style.small,
 
   stat_block: "div",
+
+  base_properties: "div" + style.base_properties,
 
   compendium: "div",
   compendium_header: style.light_bg + style.compendium_header + style.compendium_row,

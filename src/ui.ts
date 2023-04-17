@@ -8,6 +8,7 @@ import { el, style, grid } from "./components/elements.js"
 import { Select, SelectLabel } from "./components/select.js"
 import { SelectTag } from "./components/select_tag.js"
 import { Textarea } from "./components/textarea.js"
+import { StatHex } from "./components/hexagon.js"
 
 function formatModScore(mod: number) {
   if (mod < 0) {
@@ -368,15 +369,20 @@ const StatBlockComponent: m.Component = {
 
       m(el.hr),
 
-      m(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `),
-      m(BaseProperty, "Armor Class", state.current.armor_class),
-      m(BaseProperty, "Speed", state.current.speed, "ft"),
-      m(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "),
-
-      m(BaseProperty,
-        "Damage per Action",
-        state.current.damage_per_action,
+      m(el.base_properties,
+        m(el.div,
+          m(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `),
+          m(BaseProperty, "Armor Class", state.current.armor_class),
+          m(BaseProperty, "Speed", state.current.speed, "ft"),
+          m(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "),
+          m(BaseProperty,
+            "Damage per Action",
+            state.current.damage_per_action,
+          ),
+        ),
+        m(StatHex, { score: values(model.state.current.ability_modifiers).map(model.modToAbilityScore) }),
       ),
+
       m(el.hr),
       m(el.abilities_block,
         map((mod) => m(AbilityModifierComponent, { mod }),
