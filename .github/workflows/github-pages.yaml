@@ -16,7 +16,7 @@ jobs:
           npm run build
           mkdir -p build
           cp module.js standalone.js build/
-          cp index.html style.css build/
+          cp index.html build/
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
