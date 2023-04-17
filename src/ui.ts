@@ -69,7 +69,7 @@ const MultiAttacks: m.Component<{ sb: StatBlock }> = {
           onclick() {
             sb.multiattacks.push({
               id: "",
-              times: 0,
+              times: -1,
             })
           }
         }, "new"),
@@ -484,6 +484,21 @@ const SimpleCreatureCompendium: m.Comp = {
   }
 }
 
+const Footer: m.Component = {
+  view() {
+    return m("footer",
+      m(el.hr),
+      m("a", {
+        href: "https://github.com/litteram/little-creature-builder"
+      }, "Source"),
+      " license: ",
+      m("a", {
+        href: "https://github.com/litteram/little-creature-builder/blob/main/LICENSE"
+      }, "ISC"),
+    )
+  }
+}
+
 export const Ui: m.Component<{ creature?: string }> = {
   oninit(vnode) {
     if (vnode.attrs.creature) {
@@ -500,6 +515,7 @@ export const Ui: m.Component<{ creature?: string }> = {
     return m(el.main, [
       m(StatBlockComponent),
       m(SimpleCreatureCompendium),
+      m(Footer),
     ])
   },
 }

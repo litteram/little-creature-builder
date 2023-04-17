@@ -899,8 +899,8 @@
           challenge_rating,
           saving_throws,
           ability_modifiers,
-          specials: opts.specials,
-          attacks: opts.attacks,
+          multiattacks: opts.multiattacks || [],
+          attacks: opts.attacks || [],
           properties: opts.properties || {},
       };
   }
