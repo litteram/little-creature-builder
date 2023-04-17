@@ -9,19 +9,7 @@ import { Select, SelectLabel } from "./components/select.js"
 import { SelectTag } from "./components/select_tag.js"
 import { Textarea } from "./components/textarea.js"
 import { StatHex } from "./components/hexagon.js"
-
-function formatModScore(mod: number) {
-  if (mod < 0) {
-    return " - " + Math.abs(mod)
-  } else {
-    return " + " + mod
-  }
-}
-
-function formatAbilityScore(score: number) {
-  return model.modToAbilityScore(score) +
-    " (" + formatModScore(score) + ") "
-}
+import { formatAbilityScore, formatChoices } from "./components/utils.js"
 
 const Permalink: m.Component<{ sb: StatBlock }> = {
   view({ attrs: { sb } }) {
@@ -69,10 +57,65 @@ const BaseProperty: m.Component = {
   }
 }
 
+const MultiAttacks: m.Component<{ sb: StatBlock }> = {
+  view({ attrs: { sb } }) {
+    const choices = sb.attacks.map((atk) => [atk.id, atk.name]) as [string, string][]
+
+    console.log(choices)
+
+    return m(el.multiattacks,
+      m("h3", "Multiattacks",
+        m(el.button, {
+          onclick() {
+            sb.multiattacks.push({
+              id: "",
+              times: 0,
+            })
+          }
+        }, "new"),
+      ),
+      ...sb.multiattacks
+        .map((atk, key) => m(el.multiattack,
+          m(Select, {
+            key,
+            name: "times",
+            label: "#",
+            choices: formatChoices(range(0, 8)),
+            current: atk.times,
+            onchange(val) {
+              console.log("using: ", val)
+              atk.times = parseInt(val)
+            }
+          }),
+          m(Select, {
+            key,
+            name: "attack",
+            label: "Attack",
+            current: atk.id,
+            choices,
+            onchange(val) {
+              console.log("using: ", atk.id)
+              atk.id = val
+            }
+          }),
+          m(el.remove, {
+            key,
+            onclick() {
+              console.log("rm: ", atk.id)
+              sb.multiattacks = sb.multiattacks.filter(a => a.id !== atk.id)
+            }
+          }, "Remove")
+        )
+        ),
+    )
+  }
+}
+
 const AttackComponent: m.Component<{ attack: model.Attack }> = {
   view({ attrs: { attack } }) {
     const dmg = model.attackDamage(attack)
-    return m(el.action_block, { key: attack.id },
+    return m(el.action_block,
+      { key: attack.id },
       m(el.input + style.action_cell_wide, {
         name: "attack",
         placeholder: "name",
@@ -102,7 +145,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         style: style.action_cell,
         name: "die_num",
         current: attack.die_num,
-        choices: range(1, 21).map(String),
+        choices: formatChoices(range(1, 21)),
         onchange(die_num) {
           model.state.setAttack({
             ...attack,
@@ -115,7 +158,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         style: style.action_cell,
         name: "die",
         current: attack.die,
-        choices: tables.dies,
+        choices: formatChoices(tables.dies),
         onchange(die) {
           model.state.setAttack({
             ...attack,
@@ -128,7 +171,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         style: style.action_cell,
         name: "mod",
         current: attack.mod.toString(),
-        choices: range(0, 61).map(String),
+        choices: formatChoices(range(0, 61)),
         onchange(mod) {
           model.state.setAttack({
             ...attack,
@@ -141,7 +184,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         style: style.action_cell_wide,
         name: "type",
         current: attack.type,
-        choices: tables.damage_types,
+        choices: formatChoices(tables.damage_types),
         onchange(type: model.DamageType) {
           model.state.setAttack({
             ...attack,
@@ -174,8 +217,9 @@ const ActionsBlock: m.Component<{ sb: StatBlock }> = {
         }, "new"),
       ),
       m(el.actions_block,
-        sb.attacks.map(
-          (attack) => m(AttackComponent, { attack }))),
+        sb.attacks.map((attack) => m(AttackComponent, { attack }))),
+
+      sb.attacks.length ? m(MultiAttacks, { sb }) : [],
     ])
   }
 }
@@ -320,7 +364,7 @@ const StatBlockComponent: m.Component = {
           name: "level",
           label: "Level",
           current: state.current.level.toString(),
-          choices: map((i) => i.toString(), range(-5, 36)),
+          choices: formatChoices(map((i) => i.toString(), range(-5, 36))),
           onchange(lvl: string) {
             state.set({ level: parseInt(lvl) })
           },
@@ -331,7 +375,7 @@ const StatBlockComponent: m.Component = {
           label: "Role",
           onchange(val: string) { state.set({ role: val as tables.Role }) },
           current: state.current.role,
-          choices: keys(tables.roles),
+          choices: formatChoices(keys(tables.roles)),
         }),
 
         m(SelectLabel, {
@@ -339,7 +383,7 @@ const StatBlockComponent: m.Component = {
           label: "Modifier",
           onchange(val: string) { state.set({ modifier: val as tables.Modifier }) },
           current: state.current.modifier,
-          choices: keys(tables.modifiers),
+          choices: formatChoices(keys(tables.modifiers)),
         }),
 
         m(SelectLabel, {
@@ -347,7 +391,7 @@ const StatBlockComponent: m.Component = {
           label: "Size",
           onchange(val: string) { state.set({ size: val }) },
           current: state.current.size,
-          choices: tables.sizes,
+          choices: formatChoices(tables.sizes),
         }),
 
         m(SelectLabel, {
@@ -355,7 +399,7 @@ const StatBlockComponent: m.Component = {
           label: "Category",
           onchange(val: string) { state.set({ category: val }) },
           current: state.current.category,
-          choices: tables.categories,
+          choices: formatChoices(tables.categories),
         }),
 
         m(SelectLabel, {
@@ -363,7 +407,7 @@ const StatBlockComponent: m.Component = {
           label: "Alignment",
           onchange(val: string) { state.set({ alignment: val }) },
           current: state.current.alignment,
-          choices: tables.alignments,
+          choices: formatChoices(tables.alignments),
         }),
       ),
 

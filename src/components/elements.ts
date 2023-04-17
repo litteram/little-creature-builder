@@ -250,5 +250,8 @@ export const el: { [key: string]: string } = {
   action_cell: "div" + style.action_cell,
   action_cell_wide: "div" + style.action_cell_wide,
 
+  multiattacks: "div",
+  multiattack: "div",
+
   name_editor: "h1"
 } as const

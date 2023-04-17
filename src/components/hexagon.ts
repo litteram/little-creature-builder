@@ -60,8 +60,6 @@ export function StatHex(): m.Component<{ score: number[] }> {
         y = radius - Math.ceil(p * sin)
       }
 
-      console.log(s, unit, p, [x, y])
-
       return [x, y]
     })
   }

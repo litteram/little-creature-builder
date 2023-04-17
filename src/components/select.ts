@@ -22,7 +22,7 @@ const OptionComponent: m.Component<OptionAttrs> = {
 interface Attrs {
   name: string
   current: string | number
-  choices: string[] | readonly string[]
+  choices: [string | number, string][]
   onchange: (t: string) => void
   preventDefault?: boolean
   label?: string
@@ -32,9 +32,14 @@ interface Attrs {
 
 export function Select(): m.Component<Attrs> {
   const selectedIndex = Stream(0)
+
   return {
     view({ attrs: { name, current, choices, onchange, preventDefault, label, style, id } }) {
-      selectedIndex(choices.indexOf(String(current)) + 1)
+      selectedIndex(
+        choices.map(i => i[0])
+          .indexOf(String(current)) + 1)
+
+      console.log("sel: ", selectedIndex())
 
       return m(
         el.select + (style || ""),
@@ -54,7 +59,7 @@ export function Select(): m.Component<Attrs> {
         }, label),
 
         ...choices.map(
-          (choice: string) => m(OptionComponent, { value: choice }, formatString(choice))),
+          (choice) => m(OptionComponent, { value: String(choice[0]) }, choice[1])),
       )
     },
   }

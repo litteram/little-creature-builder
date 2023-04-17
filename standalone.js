@@ -102,20 +102,11 @@
 		return Vnode$4("", attrs.key, attrs, children)
 	};
 
-	var hasOwn$2;
-	var hasRequiredHasOwn;
-
-	function requireHasOwn () {
-		if (hasRequiredHasOwn) return hasOwn$2;
-		hasRequiredHasOwn = 1;
-
-		hasOwn$2 = {}.hasOwnProperty;
-		return hasOwn$2;
-	}
+	var hasOwn$2 = {}.hasOwnProperty;
 
 	var Vnode$3 = requireVnode();
 	var hyperscriptVnode$1 = hyperscriptVnode$2;
-	var hasOwn$1 = requireHasOwn();
+	var hasOwn$1 = hasOwn$2;
 
 	var selectorParser = /(?:(^|#|\.)([^#\.\[\]]+))|(\[(.+?)(?:\s*=\s*("|'|)((?:\\["'\]]|.)*?)\5)?\])/g;
 	var selectorCache = {};
@@ -1471,7 +1462,7 @@
 		if (hasRequiredAssign) return assign$1;
 		hasRequiredAssign = 1;
 
-		var hasOwn = requireHasOwn();
+		var hasOwn = hasOwn$2;
 
 		assign$1 = Object.assign || function(target, source) {
 			for (var key in source) {
@@ -1533,7 +1524,7 @@
 	}
 
 	var buildPathname = requireBuild();
-	var hasOwn = requireHasOwn();
+	var hasOwn = hasOwn$2;
 
 	var request$2 = function($window, Promise, oncompletion) {
 		var callbackCount = 0;
@@ -1927,7 +1918,7 @@
 		// }
 		// ```
 
-		var hasOwn = requireHasOwn();
+		var hasOwn = hasOwn$2;
 		// Words in RegExp literals are sometimes mangled incorrectly by the internal bundler, so use RegExp().
 		var magic = new RegExp("^(?:key|oninit|oncreate|onbeforeupdate|onupdate|onbeforeremove|onremove)$");
 
@@ -3596,8 +3587,8 @@
 	        challenge_rating,
 	        saving_throws,
 	        ability_modifiers,
-	        specials: opts.specials,
-	        attacks: opts.attacks,
+	        multiattacks: opts.multiattacks || [],
+	        attacks: opts.attacks || [],
 	        properties: opts.properties || {},
 	    };
 	}
@@ -3652,6 +3643,7 @@
 	    modifier: "normal",
 	    size: "small",
 	    attacks: [],
+	    multiattacks: [],
 	};
 	const state = {
 	    STORE_CURRENT_KEY: 'LMM_Current',
@@ -3661,7 +3653,7 @@
 	    init(creature) {
 	        const data = creature ? creature : JSON.parse(localStorage.getItem(state.STORE_CURRENT_KEY));
 	        if (!!data) {
-	            state.current = data;
+	            state.current = createCreature(data);
 	        }
 	        state.update();
 	    },
@@ -4586,6 +4578,8 @@
 	    action_block: "div" + style.action_block,
 	    action_cell: "div" + style.action_cell,
 	    action_cell_wide: "div" + style.action_cell_wide,
+	    multiattacks: "div",
+	    multiattack: "div",
 	    name_editor: "h1"
 	};
 
@@ -4792,15 +4786,6 @@
 
 	var Stream = /*@__PURE__*/getDefaultExportFromCjs(streamExports$1);
 
-	function capitalize(str) {
-	    return str.charAt(0).toUpperCase() + str.slice(1);
-	}
-	function formatString(str) {
-	    return str
-	        .replace(/[^a-z0-9\-\(\)]/ig, " ")
-	        .replace(/\b([a-zÁ-ú]{3,})/g, capitalize);
-	}
-
 	const OptionComponent = {
 	    view({ attrs: { value, disabled }, children }) {
 	        return mithril(el.option, {
@@ -4814,7 +4799,9 @@
 	    const selectedIndex = Stream(0);
 	    return {
 	        view({ attrs: { name, current, choices, onchange, preventDefault, label, style, id } }) {
-	            selectedIndex(choices.indexOf(String(current)) + 1);
+	            selectedIndex(choices.map(i => i[0])
+	                .indexOf(String(current)) + 1);
+	            console.log("sel: ", selectedIndex());
 	            return mithril(el.select + (style || ""), {
 	                id,
 	                name,
@@ -4828,7 +4815,7 @@
 	            }, mithril(OptionComponent, {
 	                value: '_label',
 	                disabled: true,
-	            }, label), ...choices.map((choice) => mithril(OptionComponent, { value: choice }, formatString(choice))));
+	            }, label), ...choices.map((choice) => mithril(OptionComponent, { value: String(choice[0]) }, choice[1])));
 	        },
 	    };
 	}
@@ -4839,6 +4826,33 @@
 	            return mithril(el.select_block, mithril(el.label, { for: id }, vnode.attrs.label), mithril(Select, Object.assign({ id }, vnode.attrs)));
 	        }
 	    };
+	}
+
+	function capitalize(str) {
+	    return str.charAt(0).toUpperCase() + str.slice(1);
+	}
+	function formatString(str) {
+	    return String(str)
+	        .replace(/[^a-z0-9\-\(\)]/ig, " ")
+	        .replace(/\b([a-zÁ-ú]{3,})/g, capitalize);
+	}
+	function formatModScore(mod) {
+	    if (mod < 0) {
+	        return " - " + Math.abs(mod);
+	    }
+	    else {
+	        return " + " + mod;
+	    }
+	}
+	function formatAbilityScore(score) {
+	    return modToAbilityScore(score) +
+	        " (" + formatModScore(score) + ") ";
+	}
+	function formatChoice(i) {
+	    return [String(i), formatString(i)];
+	}
+	function formatChoices(i) {
+	    return i.map(formatChoice);
 	}
 
 	const SelectTag = {
@@ -4852,7 +4866,7 @@
 	                name,
 	                label,
 	                current: "",
-	                choices: [...items],
+	                choices: formatChoices(items),
 	                onchange(val) {
 	                    onchange(selected.concat(val));
 	                },
@@ -4942,7 +4956,6 @@
 	                x = radius - Math.ceil(p * cos);
 	                y = radius - Math.ceil(p * sin);
 	            }
-	            console.log(s, unit, p, [x, y]);
 	            return [x, y];
 	        });
 	    }
@@ -4957,18 +4970,6 @@
 	    };
 	}
 
-	function formatModScore(mod) {
-	    if (mod < 0) {
-	        return " - " + Math.abs(mod);
-	    }
-	    else {
-	        return " + " + mod;
-	    }
-	}
-	function formatAbilityScore(score) {
-	    return modToAbilityScore(score) +
-	        " (" + formatModScore(score) + ") ";
-	}
 	const Permalink = {
 	    view({ attrs: { sb } }) {
 	        return mithril(mithril.route.Link, {
@@ -5002,6 +5003,47 @@
 	        return mithril(el.property_line, mithril("b", title), ": ", ...value);
 	    }
 	};
+	const MultiAttacks = {
+	    view({ attrs: { sb } }) {
+	        const choices = sb.attacks.map((atk) => [atk.id, atk.name]);
+	        console.log(choices);
+	        return mithril(el.multiattacks, mithril("h3", "Multiattacks", mithril(el.button, {
+	            onclick() {
+	                sb.multiattacks.push({
+	                    id: "",
+	                    times: 0,
+	                });
+	            }
+	        }, "new")), ...sb.multiattacks
+	            .map((atk, key) => mithril(el.multiattack, mithril(Select, {
+	            key,
+	            name: "times",
+	            label: "#",
+	            choices: formatChoices(range(0, 8)),
+	            current: atk.times,
+	            onchange(val) {
+	                console.log("using: ", val);
+	                atk.times = parseInt(val);
+	            }
+	        }), mithril(Select, {
+	            key,
+	            name: "attack",
+	            label: "Attack",
+	            current: atk.id,
+	            choices,
+	            onchange(val) {
+	                console.log("using: ", atk.id);
+	                atk.id = val;
+	            }
+	        }), mithril(el.remove, {
+	            key,
+	            onclick() {
+	                console.log("rm: ", atk.id);
+	                sb.multiattacks = sb.multiattacks.filter(a => a.id !== atk.id);
+	            }
+	        }, "Remove"))));
+	    }
+	};
 	const AttackComponent = {
 	    view({ attrs: { attack } }) {
 	        const dmg = attackDamage(attack);
@@ -5024,7 +5066,7 @@
 	            style: style.action_cell,
 	            name: "die_num",
 	            current: attack.die_num,
-	            choices: range(1, 21).map(String),
+	            choices: formatChoices(range(1, 21)),
 	            onchange(die_num) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { die_num: parseInt(die_num) }));
 	            }
@@ -5032,7 +5074,7 @@
 	            style: style.action_cell,
 	            name: "die",
 	            current: attack.die,
-	            choices: dies,
+	            choices: formatChoices(dies),
 	            onchange(die) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { die }));
 	            }
@@ -5040,7 +5082,7 @@
 	            style: style.action_cell,
 	            name: "mod",
 	            current: attack.mod.toString(),
-	            choices: range(0, 61).map(String),
+	            choices: formatChoices(range(0, 61)),
 	            onchange(mod) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { mod: parseInt(mod) }));
 	            }
@@ -5048,7 +5090,7 @@
 	            style: style.action_cell_wide,
 	            name: "type",
 	            current: attack.type,
-	            choices: damage_types,
+	            choices: formatChoices(damage_types),
 	            onchange(type) {
 	                state.setAttack(Object.assign(Object.assign({}, attack), { type }));
 	            }
@@ -5068,6 +5110,7 @@
 	                }
 	            }, "new")),
 	            mithril(el.actions_block, sb.attacks.map((attack) => mithril(AttackComponent, { attack }))),
+	            sb.attacks.length ? mithril(MultiAttacks, { sb }) : [],
 	        ]);
 	    }
 	};
@@ -5172,7 +5215,7 @@
 	            name: "level",
 	            label: "Level",
 	            current: state.current.level.toString(),
-	            choices: map((i) => i.toString(), range(-5, 36)),
+	            choices: formatChoices(map((i) => i.toString(), range(-5, 36))),
 	            onchange(lvl) {
 	                state.set({ level: parseInt(lvl) });
 	            },
@@ -5181,31 +5224,31 @@
 	            label: "Role",
 	            onchange(val) { state.set({ role: val }); },
 	            current: state.current.role,
-	            choices: keys(roles),
+	            choices: formatChoices(keys(roles)),
 	        }), mithril(SelectLabel, {
 	            name: "modifier",
 	            label: "Modifier",
 	            onchange(val) { state.set({ modifier: val }); },
 	            current: state.current.modifier,
-	            choices: keys(modifiers),
+	            choices: formatChoices(keys(modifiers)),
 	        }), mithril(SelectLabel, {
 	            name: "size",
 	            label: "Size",
 	            onchange(val) { state.set({ size: val }); },
 	            current: state.current.size,
-	            choices: sizes,
+	            choices: formatChoices(sizes),
 	        }), mithril(SelectLabel, {
 	            name: "category",
 	            label: "Category",
 	            onchange(val) { state.set({ category: val }); },
 	            current: state.current.category,
-	            choices: categories,
+	            choices: formatChoices(categories),
 	        }), mithril(SelectLabel, {
 	            name: "alignment",
 	            label: "Alignment",
 	            onchange(val) { state.set({ alignment: val }); },
 	            current: state.current.alignment,
-	            choices: alignments,
+	            choices: formatChoices(alignments),
 	        })), mithril(el.hr), mithril(el.base_properties, mithril(el.div, mithril(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `), mithril(BaseProperty, "Armor Class", state.current.armor_class), mithril(BaseProperty, "Speed", state.current.speed, "ft"), mithril(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "), mithril(BaseProperty, "Damage per Action", state.current.damage_per_action)), mithril(StatHex, { score: values(state.current.ability_modifiers).map(modToAbilityScore) })), mithril(el.hr), mithril(el.abilities_block, map((mod) => mithril(AbilityModifierComponent, { mod }), ["str", "dex", "con", "int", "wis", "cha"])), mithril(el.hr), mithril(PropertyLines), mithril(el.hr), mithril(ActionsBlock, { sb: state.current }), mithril(el.hr), mithril(SimpleCreatureJSON));
 	    },
 	};

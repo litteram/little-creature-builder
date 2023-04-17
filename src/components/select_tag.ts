@@ -3,6 +3,7 @@ import { map } from "rambda"
 import m from "mithril"
 import { el, style } from "./elements.js"
 import { Select } from "./select.js"
+import { formatChoices } from "./utils.js"
 
 interface Attrs {
   label: string
@@ -24,7 +25,7 @@ export const SelectTag: m.Comp<Attrs> = {
         name,
         label,
         current: "",
-        choices: [...items],
+        choices: formatChoices(items),
         onchange(val: string) {
           onchange(selected.concat(val))
         },

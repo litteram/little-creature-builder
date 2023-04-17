@@ -34,6 +34,11 @@ export type Attack = {
   type: DamageType
 }
 
+export type MultiAttack = {
+  id: string
+  times: number
+}
+
 export type Properties = { [key: string]: string[] }
 
 export type StatBlock = {
@@ -63,7 +68,7 @@ export type StatBlock = {
   challenge_rating: string
 
   attacks: Attack[]
-  specials: string[]
+  multiattacks: MultiAttack[]
   properties: Properties
 }
 
@@ -164,8 +169,8 @@ export function createCreature(opts: Partial<StatBlock>): StatBlock {
     saving_throws,
     ability_modifiers,
 
-    specials: opts.specials,
-    attacks: opts.attacks,
+    multiattacks: opts.multiattacks || [],
+    attacks: opts.attacks || [],
     properties: opts.properties || {},
   }
 }
@@ -224,7 +229,7 @@ function calculateWeaponAttackDie(attacks: number, sb: StatBlock) {
 
   for (const d in tables.dies_avg) {
     let avg = tables.dies_avg[d]
-    if (dmg - modifier + avg < sway) {}
+    if (dmg - modifier + avg < sway) { }
   }
 
   return [
@@ -268,6 +273,7 @@ const demo_creature: Partial<StatBlock> = {
   modifier: "normal",
   size: "small",
   attacks: [],
+  multiattacks: [],
 }
 
 export const state = {
@@ -279,9 +285,11 @@ export const state = {
 
   init(creature?: Partial<StatBlock>) {
     const data = creature ? creature : JSON.parse(localStorage.getItem(state.STORE_CURRENT_KEY))
+
     if (!!data) {
-      state.current = data
+      state.current = createCreature(data)
     }
+
     state.update()
   },
   update() {
