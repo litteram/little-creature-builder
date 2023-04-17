@@ -4519,6 +4519,9 @@
   `.$active `
   `.$visited `
     color ${colors.lightred}
+  `, base_properties: bss `
+    display grid
+    grid-template-columns 1fr 1fr
   `, compendium_header: bss `
     padding-top: 0.6rem
     padding-bottom: 0.6rem
@@ -4549,6 +4552,7 @@
 	    table_row: "tr" + style.table_row,
 	    table_cell: "td" + style.table_cell,
 	    label: "label" + style.label,
+	    div: "div",
 	    // Component Elements
 	    //
 	    //
@@ -4558,6 +4562,7 @@
 	    remove: "span" + style.remove,
 	    crc: "div" + style.small,
 	    stat_block: "div",
+	    base_properties: "div" + style.base_properties,
 	    compendium: "div",
 	    compendium_header: style.light_bg + style.compendium_header + style.compendium_row,
 	    compendium_row: "" + style.hilight_bg + style.compendium_row,
@@ -4879,6 +4884,70 @@
 	    };
 	}
 
+	function StatHex() {
+	    const radius = 50;
+	    const size = {
+	        width: radius * 2,
+	        height: radius * 2,
+	    };
+	    const maxScore = 30;
+	    const unit = Math.floor(radius / maxScore);
+	    const sin = Math.sin(Math.PI / 6);
+	    const cos = Math.cos(Math.PI / 6);
+	    const points = Stream([]);
+	    const style = bss `
+    fill rgb(90,90,90)
+    stroke-width 1
+    stroke rgb(90,45,45)
+  `.style;
+	    bss `
+    stroke rgba(100, 100, 100, 0.5)
+    stroke-width 2
+  `.style;
+	    function score2points(score) {
+	        return score.map((s, key) => {
+	            const p = unit * s;
+	            let y = 0;
+	            let x = 0;
+	            if (key === 0) {
+	                x = radius + 0;
+	                y = radius - p;
+	            }
+	            if (key === 1) {
+	                x = radius + Math.ceil(p * cos);
+	                y = radius - Math.ceil(p * sin);
+	            }
+	            if (key === 2) {
+	                x = radius + Math.ceil(p * cos);
+	                y = radius + Math.ceil(p * sin);
+	            }
+	            if (key === 3) {
+	                x = radius + 0;
+	                y = radius + p;
+	            }
+	            if (key === 4) {
+	                x = radius - Math.ceil(p * cos);
+	                y = radius + Math.ceil(p * sin);
+	            }
+	            if (key === 5) {
+	                x = radius - Math.ceil(p * cos);
+	                y = radius - Math.ceil(p * sin);
+	            }
+	            console.log(s, unit, p, [x, y]);
+	            return [x, y];
+	        });
+	    }
+	    return {
+	        view({ attrs: { score } }) {
+	            points(score2points(score));
+	            return mithril("svg", Object.assign({}, size), mithril("polygon", {
+	                points: points().map((s) => s.join(',')).join(' '),
+	                style,
+	            }));
+	        }
+	    };
+	}
+
 	function formatModScore(mod) {
 	    if (mod < 0) {
 	        return " - " + Math.abs(mod);
@@ -5128,7 +5197,7 @@
 	            onchange(val) { state.set({ alignment: val }); },
 	            current: state.current.alignment,
 	            choices: alignments,
-	        })), mithril(el.hr), mithril(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `), mithril(BaseProperty, "Armor Class", state.current.armor_class), mithril(BaseProperty, "Speed", state.current.speed, "ft"), mithril(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "), mithril(BaseProperty, "Damage per Action", state.current.damage_per_action), mithril(el.hr), mithril(el.abilities_block, map((mod) => mithril(AbilityModifierComponent, { mod }), ["str", "dex", "con", "int", "wis", "cha"])), mithril(el.hr), mithril(PropertyLines), mithril(el.hr), mithril(ActionsBlock, { sb: state.current }), mithril(el.hr), mithril(SimpleCreatureJSON));
+	        })), mithril(el.hr), mithril(el.base_properties, mithril(el.div, mithril(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `), mithril(BaseProperty, "Armor Class", state.current.armor_class), mithril(BaseProperty, "Speed", state.current.speed, "ft"), mithril(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "), mithril(BaseProperty, "Damage per Action", state.current.damage_per_action)), mithril(StatHex, { score: values(state.current.ability_modifiers).map(modToAbilityScore) })), mithril(el.hr), mithril(el.abilities_block, map((mod) => mithril(AbilityModifierComponent, { mod }), ["str", "dex", "con", "int", "wis", "cha"])), mithril(el.hr), mithril(PropertyLines), mithril(el.hr), mithril(ActionsBlock, { sb: state.current }), mithril(el.hr), mithril(SimpleCreatureJSON));
 	    },
 	};
 	const SimpleCreatureCompendium = {
