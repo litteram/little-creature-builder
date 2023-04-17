@@ -5011,7 +5011,7 @@
 	            onclick() {
 	                sb.multiattacks.push({
 	                    id: "",
-	                    times: 0,
+	                    times: -1,
 	                });
 	            }
 	        }, "new")), ...sb.multiattacks
@@ -5268,6 +5268,15 @@
 	        }, "x")), values(state.list))));
 	    }
 	};
+	const Footer = {
+	    view() {
+	        return mithril("footer", mithril(el.hr), mithril("a", {
+	            href: "https://github.com/litteram/little-creature-builder"
+	        }, "Source"), " license: ", mithril("a", {
+	            href: "https://github.com/litteram/little-creature-builder/blob/main/LICENSE"
+	        }, "ISC"));
+	    }
+	};
 	const Ui = {
 	    oninit(vnode) {
 	        if (vnode.attrs.creature) {
@@ -5285,6 +5294,7 @@
 	        return mithril(el.main, [
 	            mithril(StatBlockComponent),
 	            mithril(SimpleCreatureCompendium),
+	            mithril(Footer),
 	        ]);
 	    },
 	};
