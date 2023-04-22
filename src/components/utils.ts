@@ -10,12 +10,8 @@ export function formatString(str: string | number): string {
     .replace(/\b([a-zÁ-ú]{3,})/g, capitalize);
 }
 
-export function formatModScore(mod: number) {
-  if (mod < 0) {
-    return " - " + Math.abs(mod)
-  } else {
-    return " + " + mod
-  }
+export function formatModScore(n: number): string {
+  return (n < 0 ? "-" : "+") + Math.abs(n)
 }
 
 export function formatAbilityScore(score: number) {

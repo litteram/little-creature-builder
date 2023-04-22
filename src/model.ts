@@ -20,6 +20,7 @@ export type Weapon = {
   damage_type: string
 }
 
+export type SavingThrows = [number, tables.Stat, tables.Stat?][]
 export type Spell = string
 export type Die = string
 export type DamageType = typeof tables.damage_types[number]
@@ -63,7 +64,7 @@ export type StatBlock = {
   stealth: number
   speed: number
   experience: number
-  saving_throws: number[]
+  saving_throws: SavingThrows
   ability_modifiers: Abilities
   challenge_rating: string
 
@@ -94,23 +95,14 @@ export function createCreature(opts: Partial<StatBlock>): StatBlock {
   const modifier = tables.modifiers[opts.modifier]
   const template = templateByLevel(opts.level)
 
-  const saving_throws = template.saving_throws.map(
+  const savingThrowsMods = template.saving_throws.map(
     (s: number) => s + role.saving_throws + modifier.saving_throws)
 
-  let s = {
-    major: {
-      stat: saving_throws[0],
-      abilities: [role.stat_priorities[0], role.stat_priorities[1]],
-    },
-    minor: {
-      stat: saving_throws[1],
-      abilities: [role.stat_priorities[2], role.stat_priorities[3]],
-    },
-    lower: {
-      stat: saving_throws[2],
-      abilities: [role.stat_priorities[4], role.stat_priorities[5]],
-    },
-  }
+  const saving_throws: SavingThrows = [
+    [savingThrowsMods[0], role.stat_priorities[0] as tables.Stat, role.stat_priorities[1] as tables.Stat],
+    [savingThrowsMods[1], role.stat_priorities[2] as tables.Stat],
+    [savingThrowsMods[2], role.stat_priorities[4] as tables.Stat],
+  ]
 
   const ability_modifiers: Abilities = {
     str: 0,
