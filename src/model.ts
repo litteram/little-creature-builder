@@ -33,6 +33,7 @@ export type Attack = {
   die: Die
   mod: number
   type: DamageType
+  reach: number
 }
 
 export type MultiAttack = {
@@ -364,6 +365,7 @@ export const attack = {
       die: "d4",
       type: "slashing",
       mod: 0,
+      reach: 5,
     })
   },
   remove(attack: Partial<Attack>) {

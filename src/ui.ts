@@ -11,6 +11,8 @@ import { Textarea } from "./components/textarea.js"
 import { StatHex } from "./components/hexagon.js"
 import { formatAbilityScore, formatChoices } from "./components/utils.js"
 
+import { pdfStatblock } from "./pdf_statblock.js"
+
 const Permalink: m.Component<{ sb: StatBlock }> = {
   view({ attrs: { sb } }) {
     return m(m.route.Link, {
@@ -73,7 +75,7 @@ const MultiAttacks: m.Component<{ sb: StatBlock }> = {
           }
         }, "new"),
       ),
-      ...sb.multiattacks
+      sb.multiattacks
         .map((atk, key) => m(el.multiattack,
           m(Select, {
             key,
@@ -110,6 +112,7 @@ const MultiAttacks: m.Component<{ sb: StatBlock }> = {
 const AttackComponent: m.Component<{ attack: model.Attack }> = {
   view({ attrs: { attack } }) {
     const dmg = model.attackDamage(attack)
+    console.log("attack reach: ", attack.reach)
     return m(el.action_block,
       { key: attack.id },
       m(el.input + style.action_cell_wide, {
@@ -179,12 +182,27 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
       m(Select, {
         style: style.action_cell_wide,
         name: "type",
+        label: "Damage",
         current: attack.type,
         choices: formatChoices(tables.damage_types),
         onchange(type: model.DamageType) {
           model.attack.set({
             ...attack,
             type,
+          })
+        }
+      }),
+
+      m(Select, {
+        style: style.action_cell_wide,
+        name: "reach",
+        label: "Reach",
+        current: attack.reach,
+        choices: range(1, 7).map(x => [x * 5, x * 5 + " ft."]) as [number, string][],
+        onchange(reach: string) {
+          model.attack.set({
+            ...attack,
+            reach: parseInt(reach),
           })
         }
       }),
@@ -227,8 +245,8 @@ const SpellComponent: m.Component<{ spell: model.Spell }> = {
         name: spell.name,
         current: spell.times,
         choices: [
-          [0, "Innate"],
-          ...(range(1, 9).map((x) => [x, `${x}/Day`]) as [number, string][])
+          [0, "at will"],
+          ...(range(1, 9).map((x) => [x, `${x}/day`]) as [number, string][])
         ],
         onchange(val) {
           spell.times = parseInt(val)
@@ -240,7 +258,7 @@ const SpellComponent: m.Component<{ spell: model.Spell }> = {
       m(el.input, {
         placeholder: "Spell name",
         value: spell.name,
-        onchange(e) {
+        onchange() {
           spell.name = this.value
         },
         onblur() {
@@ -362,7 +380,7 @@ const PropertyLines: m.Component = {
   }
 }
 
-const SimpleCreatureJSON: m.Component = {
+const ExportSimpleCreature: m.Component = {
   view() {
     const currentJson = JSON.stringify(state.current)
     const copyText = JSON.stringify(state.current, null, 2)
@@ -382,7 +400,6 @@ const SimpleCreatureJSON: m.Component = {
 
       m(el.button, {
         onclick(e: Event) {
-          e.preventDefault()
           navigator.clipboard.writeText(copyText)
         }
       }, "copy json to clipboard"),
@@ -393,6 +410,19 @@ const SimpleCreatureJSON: m.Component = {
           state.set(JSON.parse(val))
         }
       }, "import from JSON"),
+
+      m(el.button, {
+        onclick() {
+          const val = pdfStatblock(state.current)
+          navigator.clipboard.writeText(val)
+        }
+      }, "Copy PDF-like stat block"),
+
+      m(el.button, {
+        onclick() {
+          return false
+        }
+      }, "Print stat block"),
 
       m(Permalink, { sb: state.current }),
     )
@@ -490,7 +520,7 @@ const StatBlockComponent: m.Component = {
       m(ActionsBlock, { sb: state.current }),
 
       m(el.hr),
-      m(SimpleCreatureJSON),
+      m(ExportSimpleCreature),
     )
   },
 }
