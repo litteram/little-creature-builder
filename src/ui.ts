@@ -61,7 +61,6 @@ const MultiAttacks: m.Component<{ sb: StatBlock }> = {
   view({ attrs: { sb } }) {
     const choices = sb.attacks.map((atk) => [atk.id, atk.name]) as [string, string][]
 
-    console.log(choices)
 
     return m(el.multiattacks,
       m("h3", "Multiattacks",
@@ -83,7 +82,6 @@ const MultiAttacks: m.Component<{ sb: StatBlock }> = {
             choices: formatChoices(range(0, 8)),
             current: atk.times,
             onchange(val) {
-              console.log("using: ", val)
               atk.times = parseInt(val)
             }
           }),
@@ -94,14 +92,12 @@ const MultiAttacks: m.Component<{ sb: StatBlock }> = {
             current: atk.id,
             choices,
             onchange(val) {
-              console.log("using: ", atk.id)
               atk.id = val
             }
           }),
           m(el.remove, {
             key,
             onclick() {
-              console.log("rm: ", atk.id)
               sb.multiattacks = sb.multiattacks.filter(a => a.id !== atk.id)
             }
           }, "Remove")
@@ -121,7 +117,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         placeholder: "name",
         value: attack.name,
         onchange(e: Event) {
-          model.state.setAttack({
+          model.attack.set({
             ...attack,
             name: e.target['value'],
           })
@@ -134,7 +130,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         placeholder: "description",
         value: attack.description,
         oninput(val: string) {
-          model.state.setAttack({
+          model.attack.set({
             ...attack,
             description: val,
           })
@@ -147,7 +143,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         current: attack.die_num,
         choices: formatChoices(range(1, 21)),
         onchange(die_num) {
-          model.state.setAttack({
+          model.attack.set({
             ...attack,
             die_num: parseInt(die_num),
           })
@@ -160,7 +156,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         current: attack.die,
         choices: formatChoices(tables.dies),
         onchange(die) {
-          model.state.setAttack({
+          model.attack.set({
             ...attack,
             die,
           })
@@ -173,7 +169,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         current: attack.mod.toString(),
         choices: formatChoices(range(0, 61)),
         onchange(mod) {
-          model.state.setAttack({
+          model.attack.set({
             ...attack,
             mod: parseInt(mod),
           })
@@ -186,7 +182,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
         current: attack.type,
         choices: formatChoices(tables.damage_types),
         onchange(type: model.DamageType) {
-          model.state.setAttack({
+          model.attack.set({
             ...attack,
             type,
           })
@@ -199,7 +195,7 @@ const AttackComponent: m.Component<{ attack: model.Attack }> = {
 
       m(el.remove + style.action_cell_wide, {
         onclick() {
-          model.state.removeAttack(attack)
+          model.attack.remove(attack)
         }
       }, "remove")
     )
@@ -212,7 +208,7 @@ const ActionsBlock: m.Component<{ sb: StatBlock }> = {
       m("h3", "Actions",
         m(el.button, {
           onclick() {
-            model.state.newAttack()
+            model.attack.new()
           }
         }, "new"),
       ),
@@ -220,6 +216,57 @@ const ActionsBlock: m.Component<{ sb: StatBlock }> = {
         sb.attacks.map((attack) => m(AttackComponent, { attack }))),
 
       sb.attacks.length ? m(MultiAttacks, { sb }) : [],
+    ])
+  }
+}
+
+const SpellComponent: m.Component<{ spell: model.Spell }> = {
+  view({ attrs: { spell } }) {
+    return m(el.spell_block,
+      m(Select, {
+        name: spell.name,
+        current: spell.times,
+        choices: [
+          [0, "Innate"],
+          ...(range(1, 9).map((x) => [x, `${x}/Day`]) as [number, string][])
+        ],
+        onchange(val) {
+          spell.times = parseInt(val)
+          model.spell.sort()
+        },
+        label: "Casts",
+        id: spell.id,
+      }),
+      m(el.input, {
+        placeholder: "Spell name",
+        value: spell.name,
+        onchange(e) {
+          spell.name = this.value
+        },
+        onblur() {
+          model.spell.sort()
+        },
+      }),
+      m(el.remove, {
+        onclick() {
+          model.spell.remove(spell)
+        }
+      }, "remove"),
+    )
+  }
+}
+
+const SpellsBlock: m.Component<{ sb: StatBlock }> = {
+  view({ attrs: { sb } }) {
+    return m(el.property_block, [
+      m(el.h3, "Spells",
+        m(el.button, {
+          onclick() {
+            model.spell.new()
+          }
+        }, "new")
+      ),
+      m(el.spells_block, sb.spells.map((spell) => m(SpellComponent, { spell }))),
     ])
   }
 }
@@ -323,7 +370,7 @@ const SimpleCreatureJSON: m.Component = {
       m(el.button, {
         onclick(e: Event) {
           e.preventDefault()
-          state.saveToCompendium(state.current)
+          model.compendium.save(state.current)
         }
       }, "save to compendium"),
 
@@ -437,6 +484,9 @@ const StatBlockComponent: m.Component = {
       m(PropertyLines),
 
       m(el.hr),
+      m(SpellsBlock, { sb: state.current }),
+
+      m(el.hr),
       m(ActionsBlock, { sb: state.current }),
 
       m(el.hr),
@@ -447,7 +497,7 @@ const StatBlockComponent: m.Component = {
 
 const SimpleCreatureCompendium: m.Comp = {
   oninit() {
-    state.loadCreatureCompendium()
+    model.compendium.load()
   },
   view() {
     return m(el.compendium,
@@ -476,7 +526,7 @@ const SimpleCreatureCompendium: m.Comp = {
             m(el.compendium_cell, creature.modifier),
             m(el.compendium_cell, m(Permalink, { sb: creature })),
             m(el.compendium_cell + style.remove, {
-              onclick() { state.deleteFromCompendium(creature.uid) }
+              onclick() { model.compendium.remove(creature.uid) }
             }, "x")
           ),
           values(state.list)))

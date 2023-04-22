@@ -1,5 +1,6 @@
 import { StatBlock, Abilities, SavingThrows, modToAbilityScore } from "./model.js"
-import { formatModScore } from "./components/utils.js"
+import * as model from "./model.js"
+import { formatModScore, formatString } from "./components/utils.js"
 
 function savingThrows(s: SavingThrows): string {
   const result = []
@@ -27,6 +28,20 @@ function stats(s: Abilities): string {
   return result
 }
 
+function properties(props: Partial<model.Properties>) {
+  const results: string[] = []
+  for (let key in props) {
+    const t = formatString(key)
+    results.push(`${t} ${props[key].join(", ")}`)
+  }
+
+  return results.join("\n")
+}
+
+function spellcasting(sb: StatBlock): string {
+  return `The ${sb.name} spellcasting ability is ${sb.spell_dc}`
+}
+
 export function statblock(sb: StatBlock): string {
   let result = `
 ${sb.name}
@@ -42,8 +57,9 @@ WIS
 CHA
 ${stats(sb.ability_modifiers)}
 Saving Throws ${savingThrows(sb.saving_throws)}
-Damage Resistances ${sb.properties["damage_resistances"].join(", ")}
-Condition Immunities ${sb.properties["condition_immunities"].join(", ")}
+${properties(sb.properties)}
+Challenge ${sb.challenge_rating} (${sb.experience} XP)
+${spellcasting(sb)}
   `
 
   return result

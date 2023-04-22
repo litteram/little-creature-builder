@@ -2,6 +2,7 @@ import JSONCrush from "jsoncrush"
 import { map, max, mergeDeepRight, reduce, prop } from "rambda"
 import { sum, sump, mulp } from "./utils.js"
 import { crc16 } from "./crc.js"
+import { is } from "./is.js"
 import * as tables from "./tables.js"
 
 export type AbilityNames = keyof Abilities
@@ -21,7 +22,6 @@ export type Weapon = {
 }
 
 export type SavingThrows = [number, tables.Stat, tables.Stat?][]
-export type Spell = string
 export type Die = string
 export type DamageType = typeof tables.damage_types[number]
 
@@ -40,7 +40,21 @@ export type MultiAttack = {
   times: number
 }
 
-export type Properties = { [key: string]: string[] }
+export type Properties = {
+  condition_immunities: string[]
+  condition_weaknesses: string[]
+  damage_weaknesses: string[]
+  damage_resistances: string[]
+  damage_immunities: string[]
+  languages: string[]
+  special_senses: string[]
+}
+
+export type Spell = {
+  id: string
+  times: number
+  name: string
+}
 
 export type StatBlock = {
   uid: string
@@ -69,8 +83,9 @@ export type StatBlock = {
   challenge_rating: string
 
   attacks: Attack[]
+  spells: Spell[]
   multiattacks: MultiAttack[]
-  properties: Properties
+  properties: Partial<Properties>
 }
 
 type CreatureCompendium = {
@@ -161,6 +176,7 @@ export function createCreature(opts: Partial<StatBlock>): StatBlock {
     saving_throws,
     ability_modifiers,
 
+    spells: opts.spells || [],
     multiattacks: opts.multiattacks || [],
     attacks: opts.attacks || [],
     properties: opts.properties || {},
@@ -258,6 +274,16 @@ export function attackDamage(atk: Attack) {
   }
 }
 
+export function encode(data: StatBlock): string {
+  const str = JSON.stringify(data)
+  return encodeURIComponent(JSONCrush.crush(str))
+}
+
+export function decode(data: string) {
+  const str = JSONCrush.uncrush(decodeURIComponent(data))
+  return JSON.parse(str)
+}
+
 const demo_creature: Partial<StatBlock> = {
   name: "Creature",
   level: 0,
@@ -299,31 +325,36 @@ export const state = {
     )
     state.update()
   },
+}
 
-  loadCreatureCompendium() {
+
+export const compendium = {
+  load() {
     const data = JSON.parse(localStorage.getItem(state.STORE_COMPENDIUM_KEY))
     state.list = data || {}
   },
 
-  saveToCompendium(sb: StatBlock) {
+  save(sb: StatBlock) {
     state.list[sb.uid] = sb
-    state.saveCompendium()
+    compendium.flush()
   },
 
-  deleteFromCompendium(uid: string) {
+  remove(uid: string) {
     delete state.list[uid]
-    state.saveCompendium()
+    compendium.flush()
   },
 
-  saveCompendium() {
+  flush() {
     localStorage.setItem(state.STORE_COMPENDIUM_KEY, JSON.stringify(state.list))
   },
 
-  resetCompendium() {
+  reset() {
     localStorage.setItem(state.STORE_COMPENDIUM_KEY, "{}")
   },
+}
 
-  newAttack() {
+export const attack = {
+  new() {
     const id = crc16(Math.random().toString())
     state.current.attacks.push({
       id,
@@ -335,13 +366,13 @@ export const state = {
       mod: 0,
     })
   },
-  removeAttack(attack: Partial<Attack>) {
+  remove(attack: Partial<Attack>) {
     const attacks = state.current.attacks
       .filter((atk) => atk.id != attack.id)
 
     state.set({ attacks })
   },
-  setAttack(atk: Attack) {
+  set(atk: Attack) {
     const attacks = state.current.attacks
       .map((k) => (k.id == atk.id) ? atk : k)
 
@@ -350,12 +381,38 @@ export const state = {
 
 }
 
-export function encode(data: StatBlock): string {
-  const str = JSON.stringify(data)
-  return encodeURIComponent(JSONCrush.crush(str))
-}
-
-export function decode(data: string) {
-  const str = JSONCrush.uncrush(decodeURIComponent(data))
-  return JSON.parse(str)
+export const spell = {
+  new() {
+    const id = crc16(Math.random().toString())
+    state.current.spells.push({
+      id,
+      times: 0,
+      name: "",
+    })
+    spell.sort()
+  },
+  remove(item: Spell) {
+    state.set({
+      spells: state.current.spells.filter(
+        (s) => s.id !== item.id
+      )
+    })
+    spell.sort()
+  },
+  sort() {
+    state.set({
+      spells: state.current.spells.sort(
+        (a, b) => {
+          if (a.times === b.times) {
+            return (a.name).localeCompare(b.name)
+          } else {
+            return a.times < b.times ? -1 : 1
+          }
+        }
+      )
+    })
+  },
+  validate(s: Spell) {
+    return is.Number(s.times) && is.String(s.name)
+  }
 }

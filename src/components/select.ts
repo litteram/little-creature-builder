@@ -36,15 +36,14 @@ export function Select(): m.Component<Attrs> {
   return {
     view({ attrs: { name, current, choices, onchange, preventDefault, label, style, id } }) {
       selectedIndex(
-        choices.map(i => i[0])
+        choices.map(i => String(i[0]))
           .indexOf(String(current)) + 1)
-
-      console.log("sel: ", selectedIndex())
 
       return m(
         el.select + (style || ""),
         {
           id,
+          key: id,
           name,
           selectedIndex: selectedIndex(),
           onchange(e: Event) {

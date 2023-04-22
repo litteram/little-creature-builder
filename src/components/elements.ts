@@ -157,6 +157,21 @@ export const style = {
     padding 0.6rem 0
   `,
 
+  spells_block: b`
+    display grid
+    grid-template-columns 1fr 1fr
+    grid-template-rows auto
+    grid-column-gap 2rem
+  `,
+  spell_block: b`
+    align-self start
+    display grid
+    grid-template-columns 1fr 1fr 1fr
+    grid-template-rows auto
+    grid-column-gap 0.6rem
+    grid-row-gap 0.8rem
+  `,
+
   select_tag_component: b`
     min-width 16rem
   `,
@@ -217,6 +232,7 @@ export const el: { [key: string]: string } = {
   table_cell: "td" + style.table_cell,
   label: "label" + style.label,
   div: "div",
+  h3: "h3",
   // Component Elements
   //
   //
@@ -249,6 +265,9 @@ export const el: { [key: string]: string } = {
   action_block: "div" + style.action_block,
   action_cell: "div" + style.action_cell,
   action_cell_wide: "div" + style.action_cell_wide,
+
+  spells_block: "div" + style.spells_block,
+  spell_block: "div" + style.spell_block,
 
   multiattacks: "div",
   multiattack: "div",
