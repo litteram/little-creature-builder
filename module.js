@@ -840,21 +840,12 @@
       const role = roles[opts.role];
       const modifier = modifiers[opts.modifier];
       const template = templateByLevel(opts.level);
-      const saving_throws = template.saving_throws.map((s) => s + role.saving_throws + modifier.saving_throws);
-      ({
-          major: {
-              stat: saving_throws[0],
-              abilities: [role.stat_priorities[0], role.stat_priorities[1]],
-          },
-          minor: {
-              stat: saving_throws[1],
-              abilities: [role.stat_priorities[2], role.stat_priorities[3]],
-          },
-          lower: {
-              stat: saving_throws[2],
-              abilities: [role.stat_priorities[4], role.stat_priorities[5]],
-          },
-      });
+      const savingThrowsMods = template.saving_throws.map((s) => s + role.saving_throws + modifier.saving_throws);
+      const saving_throws = [
+          [savingThrowsMods[0], role.stat_priorities[0], role.stat_priorities[1]],
+          [savingThrowsMods[1], role.stat_priorities[2]],
+          [savingThrowsMods[2], role.stat_priorities[4]],
+      ];
       const ability_modifiers = {
           str: 0,
           dex: 0,
