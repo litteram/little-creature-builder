@@ -2696,6 +2696,15 @@
 	    return ((crc ^ 0) & 0xFFFF).toString(16);
 	}
 
+	const is = {
+	    Number(x) {
+	        return typeof x == "number";
+	    },
+	    String(x) {
+	        return typeof x == "string";
+	    }
+	};
+
 	const levels = [
 	    {
 	        level: -5,
@@ -3578,6 +3587,7 @@
 	        challenge_rating,
 	        saving_throws,
 	        ability_modifiers,
+	        spells: opts.spells || [],
 	        multiattacks: opts.multiattacks || [],
 	        attacks: opts.attacks || [],
 	        properties: opts.properties || {},
@@ -3627,6 +3637,14 @@
 	        max: maxDie * atk.die_num + atk.mod,
 	    };
 	}
+	function encode(data) {
+	    const str = JSON.stringify(data);
+	    return encodeURIComponent(JSONCrush.crush(str));
+	}
+	function decode(data) {
+	    const str = JSONCrush.uncrush(decodeURIComponent(data));
+	    return JSON.parse(str);
+	}
 	const demo_creature = {
 	    name: "Creature",
 	    level: 0,
@@ -3659,25 +3677,29 @@
 	        state.current = mergeDeepRight(state.current, data);
 	        state.update();
 	    },
-	    loadCreatureCompendium() {
+	};
+	const compendium = {
+	    load() {
 	        const data = JSON.parse(localStorage.getItem(state.STORE_COMPENDIUM_KEY));
 	        state.list = data || {};
 	    },
-	    saveToCompendium(sb) {
+	    save(sb) {
 	        state.list[sb.uid] = sb;
-	        state.saveCompendium();
+	        compendium.flush();
 	    },
-	    deleteFromCompendium(uid) {
+	    remove(uid) {
 	        delete state.list[uid];
-	        state.saveCompendium();
+	        compendium.flush();
 	    },
-	    saveCompendium() {
+	    flush() {
 	        localStorage.setItem(state.STORE_COMPENDIUM_KEY, JSON.stringify(state.list));
 	    },
-	    resetCompendium() {
+	    reset() {
 	        localStorage.setItem(state.STORE_COMPENDIUM_KEY, "{}");
 	    },
-	    newAttack() {
+	};
+	const attack = {
+	    new() {
 	        const id = crc16(Math.random().toString());
 	        state.current.attacks.push({
 	            id,
@@ -3687,27 +3709,52 @@
 	            die: "d4",
 	            type: "slashing",
 	            mod: 0,
+	            reach: 5,
 	        });
 	    },
-	    removeAttack(attack) {
+	    remove(attack) {
 	        const attacks = state.current.attacks
 	            .filter((atk) => atk.id != attack.id);
 	        state.set({ attacks });
 	    },
-	    setAttack(atk) {
+	    set(atk) {
 	        const attacks = state.current.attacks
 	            .map((k) => (k.id == atk.id) ? atk : k);
 	        state.set({ attacks });
 	    },
 	};
-	function encode(data) {
-	    const str = JSON.stringify(data);
-	    return encodeURIComponent(JSONCrush.crush(str));
-	}
-	function decode(data) {
-	    const str = JSONCrush.uncrush(decodeURIComponent(data));
-	    return JSON.parse(str);
-	}
+	const spell = {
+	    new() {
+	        const id = crc16(Math.random().toString());
+	        state.current.spells.push({
+	            id,
+	            times: 0,
+	            name: "",
+	        });
+	        spell.sort();
+	    },
+	    remove(item) {
+	        state.set({
+	            spells: state.current.spells.filter((s) => s.id !== item.id)
+	        });
+	        spell.sort();
+	    },
+	    sort() {
+	        state.set({
+	            spells: state.current.spells.sort((a, b) => {
+	                if (a.times === b.times) {
+	                    return (a.name).localeCompare(b.name);
+	                }
+	                else {
+	                    return a.times < b.times ? -1 : 1;
+	                }
+	            })
+	        });
+	    },
+	    validate(s) {
+	        return is.Number(s.times) && is.String(s.name);
+	    }
+	};
 
 	var pseudos = [
 	  ':active',
@@ -4496,6 +4543,18 @@
     grid-column 1 / 4
     margin 0
     padding 0.6rem 0
+  `, spells_block: bss `
+    display grid
+    grid-template-columns 1fr 1fr
+    grid-template-rows auto
+    grid-column-gap 2rem
+  `, spell_block: bss `
+    align-self start
+    display grid
+    grid-template-columns 1fr 1fr 1fr
+    grid-template-rows auto
+    grid-column-gap 0.6rem
+    grid-row-gap 0.8rem
   `, select_tag_component: bss `
     min-width 16rem
   `, main: bss `
@@ -4545,6 +4604,7 @@
 	    table_cell: "td" + style.table_cell,
 	    label: "label" + style.label,
 	    div: "div",
+	    h3: "h3",
 	    // Component Elements
 	    //
 	    //
@@ -4569,6 +4629,8 @@
 	    action_block: "div" + style.action_block,
 	    action_cell: "div" + style.action_cell,
 	    action_cell_wide: "div" + style.action_cell_wide,
+	    spells_block: "div" + style.spells_block,
+	    spell_block: "div" + style.spell_block,
 	    multiattacks: "div",
 	    multiattack: "div",
 	    name_editor: "h1"
@@ -4790,11 +4852,11 @@
 	    const selectedIndex = Stream(0);
 	    return {
 	        view({ attrs: { name, current, choices, onchange, preventDefault, label, style, id } }) {
-	            selectedIndex(choices.map(i => i[0])
+	            selectedIndex(choices.map(i => String(i[0]))
 	                .indexOf(String(current)) + 1);
-	            console.log("sel: ", selectedIndex());
 	            return mithril(el.select + (style || ""), {
 	                id,
+	                key: id,
 	                name,
 	                selectedIndex: selectedIndex(),
 	                onchange(e) {
@@ -4956,6 +5018,121 @@
 	    };
 	}
 
+	function savingThrows(s) {
+	    const result = [];
+	    for (let i of s) {
+	        result.push(`${i[1]} ${formatModScore(i[0])}`);
+	        if (i[2]) {
+	            result.push(`${i[2]} ${formatModScore(i[0])}`);
+	        }
+	    }
+	    return result.join(", ");
+	}
+	function stats(s) {
+	    let result = "";
+	    // str
+	    for (let i of ["str", "dex", "con", "int", "wis", "cha"]) {
+	        result += modToAbilityScore(s[i]);
+	        result += ` (${formatModScore(s[i])}) `;
+	    }
+	    return result;
+	}
+	function properties(props) {
+	    const results = [];
+	    for (let key in props) {
+	        const t = formatString(key);
+	        results.push(`${t}: ${props[key].map(formatString).join(", ")}`);
+	    }
+	    return results.join("\n");
+	}
+	function spellcasting(sb) {
+	    const role = roles[sb.role];
+	    const spellcastingAbilities = [];
+	    for (let i in role.stat_priorities) {
+	        if (["int", "wis", "cha"].indexOf(role.stat_priorities[i]) > -1) {
+	            spellcastingAbilities.push(role.stat_priorities[i]);
+	        }
+	        if (spellcastingAbilities.length == 2) {
+	            break;
+	        }
+	    }
+	    let results = `The ${sb.name}'s spellcasting ability is \
+${spellcastingAbilities[0]} (spell save DC ${sb.spell_dc[0]}) and \
+${spellcastingAbilities[1]} (spell save DC ${sb.spell_dc[1]}).
+`;
+	    const spells = sb.spells.reduce((res, spell) => {
+	        if (res[spell.times]) {
+	            res[spell.times].push(spell.name);
+	            return res;
+	        }
+	        res[spell.times] = [spell.name];
+	        return res;
+	    }, []);
+	    for (let times in spells) {
+	        if (!spells[times])
+	            continue;
+	        if (times == "0") {
+	            results += "At will: ";
+	        }
+	        else {
+	            results += `${times}/day each: `;
+	        }
+	        results += spells[times].join(", ");
+	        results += ". ";
+	    }
+	    return results;
+	}
+	function attacks(sb) {
+	    let results = "Attacks\n";
+	    let hitModifier = 0;
+	    let bestAbility = "str";
+	    for (let ability in sb.ability_modifiers) {
+	        if (sb.ability_modifiers[ability] > hitModifier) {
+	            hitModifier = sb.ability_modifiers[ability];
+	            bestAbility = ability;
+	        }
+	    }
+	    if (sb.multiattacks) {
+	        const multiattackNames = sb.attacks.reduce((res, a) => {
+	            res[a.id] = a.name;
+	            return res;
+	        }, {});
+	        results += `Multiattack. ${sb.name} attacks `;
+	        results += sb.multiattacks.map((a) => `${a.times} time${a.times > 1 ? "s" : ""} with ${multiattackNames[a.id]}`).join(", ");
+	        results += ".\n";
+	    }
+	    for (let attack of sb.attacks) {
+	        results += `${attack.name}. ${attack.description} Melee Attack: +${hitModifier} (${bestAbility}) to hit.\
+Reach ${attack.reach} ft., one target.\
+  Hit: ${attackDamage(attack).avg} (${attack.die_num}${attack.die} + ${attack.mod}) \
+${formatString(attack.type)} damage.
+`; // FIXME Melee/Reach, # targets
+	    }
+	    return results;
+	}
+	function pdfStatblock(sb) {
+	    let result = `
+${sb.name}
+${sb.size} ${sb.category} ${sb.alignment}
+Armor Class ${sb.armor_class}
+Hit Points ${sb.hit_points} (${sb.hit_die[0]}${sb.hit_die[1]} + ${sb.hit_die[2]})
+Speed ${sb.speed} ft.
+    STR
+  DEX
+  CON
+  INT
+  WIS
+  CHA
+${stats(sb.ability_modifiers)}
+Saving Throws: ${savingThrows(sb.saving_throws)}
+${properties(sb.properties)}
+Challenge ${sb.challenge_rating} (${sb.experience} XP)
+${spellcasting(sb)}
+${attacks(sb)}
+  `;
+	    return result;
+	}
+
 	const Permalink = {
 	    view({ attrs: { sb } }) {
 	        return mithril(mithril.route.Link, {
@@ -4992,7 +5169,6 @@
 	const MultiAttacks = {
 	    view({ attrs: { sb } }) {
 	        const choices = sb.attacks.map((atk) => [atk.id, atk.name]);
-	        console.log(choices);
 	        return mithril(el.multiattacks, mithril("h3", "Multiattacks", mithril(el.button, {
 	            onclick() {
 	                sb.multiattacks.push({
@@ -5000,7 +5176,7 @@
 	                    times: -1,
 	                });
 	            }
-	        }, "new")), ...sb.multiattacks
+	        }, "new")), sb.multiattacks
 	            .map((atk, key) => mithril(el.multiattack, mithril(Select, {
 	            key,
 	            name: "times",
@@ -5008,7 +5184,6 @@
 	            choices: formatChoices(range(0, 8)),
 	            current: atk.times,
 	            onchange(val) {
-	                console.log("using: ", val);
 	                atk.times = parseInt(val);
 	            }
 	        }), mithril(Select, {
@@ -5018,71 +5193,80 @@
 	            current: atk.id,
 	            choices,
 	            onchange(val) {
-	                console.log("using: ", atk.id);
 	                atk.id = val;
 	            }
 	        }), mithril(el.remove, {
 	            key,
 	            onclick() {
-	                console.log("rm: ", atk.id);
 	                sb.multiattacks = sb.multiattacks.filter(a => a.id !== atk.id);
 	            }
 	        }, "Remove"))));
 	    }
 	};
 	const AttackComponent = {
-	    view({ attrs: { attack } }) {
-	        const dmg = attackDamage(attack);
-	        return mithril(el.action_block, { key: attack.id }, mithril(el.input + style.action_cell_wide, {
+	    view({ attrs: { attack: attack$1 } }) {
+	        const dmg = attackDamage(attack$1);
+	        console.log("attack reach: ", attack$1.reach);
+	        return mithril(el.action_block, { key: attack$1.id }, mithril(el.input + style.action_cell_wide, {
 	            name: "attack",
 	            placeholder: "name",
-	            value: attack.name,
+	            value: attack$1.name,
 	            onchange(e) {
-	                state.setAttack(Object.assign(Object.assign({}, attack), { name: e.target['value'] }));
+	                attack.set(Object.assign(Object.assign({}, attack$1), { name: e.target['value'] }));
 	            }
 	        }), mithril(Textarea, {
 	            style: style.action_cell_wide,
 	            name: "description",
 	            placeholder: "description",
-	            value: attack.description,
+	            value: attack$1.description,
 	            oninput(val) {
-	                state.setAttack(Object.assign(Object.assign({}, attack), { description: val }));
+	                attack.set(Object.assign(Object.assign({}, attack$1), { description: val }));
 	            },
 	        }), mithril(Select, {
 	            style: style.action_cell,
 	            name: "die_num",
-	            current: attack.die_num,
+	            current: attack$1.die_num,
 	            choices: formatChoices(range(1, 21)),
 	            onchange(die_num) {
-	                state.setAttack(Object.assign(Object.assign({}, attack), { die_num: parseInt(die_num) }));
+	                attack.set(Object.assign(Object.assign({}, attack$1), { die_num: parseInt(die_num) }));
 	            }
 	        }), mithril(Select, {
 	            style: style.action_cell,
 	            name: "die",
-	            current: attack.die,
+	            current: attack$1.die,
 	            choices: formatChoices(dies),
 	            onchange(die) {
-	                state.setAttack(Object.assign(Object.assign({}, attack), { die }));
+	                attack.set(Object.assign(Object.assign({}, attack$1), { die }));
 	            }
 	        }), mithril(Select, {
 	            style: style.action_cell,
 	            name: "mod",
-	            current: attack.mod.toString(),
+	            current: attack$1.mod.toString(),
 	            choices: formatChoices(range(0, 61)),
 	            onchange(mod) {
-	                state.setAttack(Object.assign(Object.assign({}, attack), { mod: parseInt(mod) }));
+	                attack.set(Object.assign(Object.assign({}, attack$1), { mod: parseInt(mod) }));
 	            }
 	        }), mithril(Select, {
 	            style: style.action_cell_wide,
 	            name: "type",
-	            current: attack.type,
+	            label: "Damage",
+	            current: attack$1.type,
 	            choices: formatChoices(damage_types),
 	            onchange(type) {
-	                state.setAttack(Object.assign(Object.assign({}, attack), { type }));
+	                attack.set(Object.assign(Object.assign({}, attack$1), { type }));
+	            }
+	        }), mithril(Select, {
+	            style: style.action_cell_wide,
+	            name: "reach",
+	            label: "Reach",
+	            current: attack$1.reach,
+	            choices: range(1, 7).map(x => [x * 5, x * 5 + " ft."]),
+	            onchange(reach) {
+	                attack.set(Object.assign(Object.assign({}, attack$1), { reach: parseInt(reach) }));
 	            }
 	        }), mithril(el.action_cell, "max: ", mithril("b", dmg.max)), mithril(el.action_cell, "avg: ", mithril("b", dmg.avg)), mithril(el.action_cell, "min: ", mithril("b", dmg.min)), mithril(el.remove + style.action_cell_wide, {
 	            onclick() {
-	                state.removeAttack(attack);
+	                attack.remove(attack$1);
 	            }
 	        }, "remove"));
 	    }
@@ -5092,11 +5276,54 @@
 	        return mithril(".actions", [
 	            mithril("h3", "Actions", mithril(el.button, {
 	                onclick() {
-	                    state.newAttack();
+	                    attack.new();
 	                }
 	            }, "new")),
 	            mithril(el.actions_block, sb.attacks.map((attack) => mithril(AttackComponent, { attack }))),
 	            sb.attacks.length ? mithril(MultiAttacks, { sb }) : [],
+	        ]);
+	    }
+	};
+	const SpellComponent = {
+	    view({ attrs: { spell: spell$1 } }) {
+	        return mithril(el.spell_block, mithril(Select, {
+	            name: spell$1.name,
+	            current: spell$1.times,
+	            choices: [
+	                [0, "at will"],
+	                ...range(1, 9).map((x) => [x, `${x}/day`])
+	            ],
+	            onchange(val) {
+	                spell$1.times = parseInt(val);
+	                spell.sort();
+	            },
+	            label: "Casts",
+	            id: spell$1.id,
+	        }), mithril(el.input, {
+	            placeholder: "Spell name",
+	            value: spell$1.name,
+	            onchange() {
+	                spell$1.name = this.value;
+	            },
+	            onblur() {
+	                spell.sort();
+	            },
+	        }), mithril(el.remove, {
+	            onclick() {
+	                spell.remove(spell$1);
+	            }
+	        }, "remove"));
+	    }
+	};
+	const SpellsBlock = {
+	    view({ attrs: { sb } }) {
+	        return mithril(el.property_block, [
+	            mithril(el.h3, "Spells", mithril(el.button, {
+	                onclick() {
+	                    spell.new();
+	                }
+	            }, "new")),
+	            mithril(el.spells_block, sb.spells.map((spell) => mithril(SpellComponent, { spell }))),
 	        ]);
 	    }
 	};
@@ -5169,14 +5396,14 @@
 	        ];
 	    }
 	};
-	const SimpleCreatureJSON = {
+	const ExportSimpleCreature = {
 	    view() {
 	        const currentJson = JSON.stringify(state.current);
 	        const copyText = JSON.stringify(state.current, null, 2);
 	        return mithril(".actions", mithril(el.button, {
 	            onclick(e) {
 	                e.preventDefault();
-	                state.saveToCompendium(state.current);
+	                compendium.save(state.current);
 	            }
 	        }, "save to compendium"), mithril(el.input, {
 	            id: "littleCreatureJSON",
@@ -5184,7 +5411,6 @@
 	            value: currentJson,
 	        }), mithril(el.button, {
 	            onclick(e) {
-	                e.preventDefault();
 	                navigator.clipboard.writeText(copyText);
 	            }
 	        }, "copy json to clipboard"), mithril(el.button, {
@@ -5192,7 +5418,16 @@
 	                const val = document.getElementById("littleCreatureJSON").value;
 	                state.set(JSON.parse(val));
 	            }
-	        }, "import from JSON"), mithril(Permalink, { sb: state.current }));
+	        }, "import from JSON"), mithril(el.button, {
+	            onclick() {
+	                const val = pdfStatblock(state.current);
+	                navigator.clipboard.writeText(val);
+	            }
+	        }, "Copy PDF-like stat block"), mithril(el.button, {
+	            onclick() {
+	                return false;
+	            }
+	        }, "Print stat block"), mithril(Permalink, { sb: state.current }));
 	    }
 	};
 	const StatBlockComponent = {
@@ -5235,12 +5470,12 @@
 	            onchange(val) { state.set({ alignment: val }); },
 	            current: state.current.alignment,
 	            choices: formatChoices(alignments),
-	        })), mithril(el.hr), mithril(el.base_properties, mithril(el.div, mithril(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `), mithril(BaseProperty, "Armor Class", state.current.armor_class), mithril(BaseProperty, "Speed", state.current.speed, "ft"), mithril(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "), mithril(BaseProperty, "Damage per Action", state.current.damage_per_action)), mithril(StatHex, { score: values(state.current.ability_modifiers).map(modToAbilityScore) })), mithril(el.hr), mithril(el.abilities_block, map((mod) => mithril(AbilityModifierComponent, { mod }), ["str", "dex", "con", "int", "wis", "cha"])), mithril(el.hr), mithril(PropertyLines), mithril(el.hr), mithril(ActionsBlock, { sb: state.current }), mithril(el.hr), mithril(SimpleCreatureJSON));
+	        })), mithril(el.hr), mithril(el.base_properties, mithril(el.div, mithril(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `), mithril(BaseProperty, "Armor Class", state.current.armor_class), mithril(BaseProperty, "Speed", state.current.speed, "ft"), mithril(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "), mithril(BaseProperty, "Damage per Action", state.current.damage_per_action)), mithril(StatHex, { score: values(state.current.ability_modifiers).map(modToAbilityScore) })), mithril(el.hr), mithril(el.abilities_block, map((mod) => mithril(AbilityModifierComponent, { mod }), ["str", "dex", "con", "int", "wis", "cha"])), mithril(el.hr), mithril(PropertyLines), mithril(el.hr), mithril(SpellsBlock, { sb: state.current }), mithril(el.hr), mithril(ActionsBlock, { sb: state.current }), mithril(el.hr), mithril(ExportSimpleCreature));
 	    },
 	};
 	const SimpleCreatureCompendium = {
 	    oninit() {
-	        state.loadCreatureCompendium();
+	        compendium.load();
 	    },
 	    view() {
 	        return mithril(el.compendium, mithril("h1", "List of creatures"), mithril(el.compendium, mithril(el.compendium_header + style.light_bg, mithril(el.compendium_cell, "uid"), mithril(el.compendium_cell, "name"), mithril(el.compendium_cell, "level"), mithril(el.compendium_cell, "role"), mithril(el.compendium_cell, "modifier")), map((creature) => mithril(el.compendium_row + style.hilight_bg, {
@@ -5250,7 +5485,7 @@
 	                mithril.route.set("/" + encode(creature));
 	            }
 	        }, mithril(el.compendium_cell, creature.uid), mithril(el.compendium_cell, creature.name), mithril(el.compendium_cell, creature.level), mithril(el.compendium_cell, creature.role), mithril(el.compendium_cell, creature.modifier), mithril(el.compendium_cell, mithril(Permalink, { sb: creature })), mithril(el.compendium_cell + style.remove, {
-	            onclick() { state.deleteFromCompendium(creature.uid); }
+	            onclick() { compendium.remove(creature.uid); }
 	        }, "x")), values(state.list))));
 	    }
 	};

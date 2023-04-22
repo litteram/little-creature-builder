@@ -890,6 +890,7 @@
           challenge_rating,
           saving_throws,
           ability_modifiers,
+          spells: opts.spells || [],
           multiattacks: opts.multiattacks || [],
           attacks: opts.attacks || [],
           properties: opts.properties || {},
