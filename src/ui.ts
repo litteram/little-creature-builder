@@ -9,18 +9,11 @@ import { Select, SelectLabel } from "./components/select.js"
 import { SelectTag } from "./components/select_tag.js"
 import { Textarea } from "./components/textarea.js"
 import { StatHex } from "./components/hexagon.js"
+import { Permalink } from "./components/permalink.js"
+
 import { formatAbilityScore, formatChoices } from "./components/utils.js"
 
 import { pdfStatblock } from "./pdf_statblock.js"
-
-const Permalink: m.Component<{ sb: StatBlock }> = {
-  view({ attrs: { sb } }) {
-    return m(m.route.Link, {
-      class: style.permalink,
-      href: "/" + model.encode(sb)
-    }, "Permalink")
-  }
-}
 
 const NameEditorComponent: m.Component = {
   view() {
@@ -424,7 +417,7 @@ const ExportSimpleCreature: m.Component = {
         }
       }, "Print stat block"),
 
-      m(Permalink, { sb: state.current }),
+      m(Permalink, { link: model.encode(state.current) }),
     )
   }
 }
@@ -525,7 +518,7 @@ const StatBlockComponent: m.Component = {
   },
 }
 
-const SimpleCreatureCompendium: m.Comp = {
+const Compendium: m.Comp = {
   oninit() {
     model.compendium.load()
   },
@@ -554,7 +547,7 @@ const SimpleCreatureCompendium: m.Comp = {
             m(el.compendium_cell, creature.level),
             m(el.compendium_cell, creature.role),
             m(el.compendium_cell, creature.modifier),
-            m(el.compendium_cell, m(Permalink, { sb: creature })),
+            m(el.compendium_cell, m(Permalink, { link: model.encode(creature) })),
             m(el.compendium_cell + style.remove, {
               onclick() { model.compendium.remove(creature.uid) }
             }, "x")
@@ -564,7 +557,7 @@ const SimpleCreatureCompendium: m.Comp = {
   }
 }
 
-const Footer: m.Component = {
+export const Footer: m.Component = {
   view() {
     return m("footer",
       m(el.hr),
@@ -594,7 +587,7 @@ export const Ui: m.Component<{ creature?: string }> = {
   view() {
     return m(el.main, [
       m(StatBlockComponent),
-      m(SimpleCreatureCompendium),
+      m(Compendium),
       m(Footer),
     ])
   },
