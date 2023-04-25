@@ -5018,6 +5018,15 @@
 	    };
 	}
 
+	const Permalink = {
+	    view({ attrs: { link } }) {
+	        return mithril(mithril.route.Link, {
+	            class: style.permalink,
+	            href: "/" + link
+	        }, "Permalink");
+	    }
+	};
+
 	function savingThrows(s) {
 	    const result = [];
 	    for (let i of s) {
@@ -5133,14 +5142,6 @@ ${attacks(sb)}
 	    return result;
 	}
 
-	const Permalink = {
-	    view({ attrs: { sb } }) {
-	        return mithril(mithril.route.Link, {
-	            class: style.permalink,
-	            href: "/" + encode(sb)
-	        }, "Permalink");
-	    }
-	};
 	const NameEditorComponent = {
 	    view() {
 	        return mithril(el.input, {
@@ -5427,7 +5428,7 @@ ${attacks(sb)}
 	            onclick() {
 	                return false;
 	            }
-	        }, "Print stat block"), mithril(Permalink, { sb: state.current }));
+	        }, "Print stat block"), mithril(Permalink, { link: encode(state.current) }));
 	    }
 	};
 	const StatBlockComponent = {
@@ -5473,7 +5474,7 @@ ${attacks(sb)}
 	        })), mithril(el.hr), mithril(el.base_properties, mithril(el.div, mithril(BaseProperty, "Hit Points", state.current.hit_points, ` (${state.current.hit_die[0]}${state.current.hit_die[1]} + ${state.current.hit_die[2]}) `), mithril(BaseProperty, "Armor Class", state.current.armor_class), mithril(BaseProperty, "Speed", state.current.speed, "ft"), mithril(BaseProperty, "Challenge", state.current.challenge_rating, " ( ", state.current.experience, " ) "), mithril(BaseProperty, "Damage per Action", state.current.damage_per_action)), mithril(StatHex, { score: values(state.current.ability_modifiers).map(modToAbilityScore) })), mithril(el.hr), mithril(el.abilities_block, map((mod) => mithril(AbilityModifierComponent, { mod }), ["str", "dex", "con", "int", "wis", "cha"])), mithril(el.hr), mithril(PropertyLines), mithril(el.hr), mithril(SpellsBlock, { sb: state.current }), mithril(el.hr), mithril(ActionsBlock, { sb: state.current }), mithril(el.hr), mithril(ExportSimpleCreature));
 	    },
 	};
-	const SimpleCreatureCompendium = {
+	const Compendium = {
 	    oninit() {
 	        compendium.load();
 	    },
@@ -5484,7 +5485,7 @@ ${attacks(sb)}
 	                state.current = creature;
 	                mithril.route.set("/" + encode(creature));
 	            }
-	        }, mithril(el.compendium_cell, creature.uid), mithril(el.compendium_cell, creature.name), mithril(el.compendium_cell, creature.level), mithril(el.compendium_cell, creature.role), mithril(el.compendium_cell, creature.modifier), mithril(el.compendium_cell, mithril(Permalink, { sb: creature })), mithril(el.compendium_cell + style.remove, {
+	        }, mithril(el.compendium_cell, creature.uid), mithril(el.compendium_cell, creature.name), mithril(el.compendium_cell, creature.level), mithril(el.compendium_cell, creature.role), mithril(el.compendium_cell, creature.modifier), mithril(el.compendium_cell, mithril(Permalink, { link: encode(creature) })), mithril(el.compendium_cell + style.remove, {
 	            onclick() { compendium.remove(creature.uid); }
 	        }, "x")), values(state.list))));
 	    }
@@ -5514,7 +5515,7 @@ ${attacks(sb)}
 	    view() {
 	        return mithril(el.main, [
 	            mithril(StatBlockComponent),
-	            mithril(SimpleCreatureCompendium),
+	            mithril(Compendium),
 	            mithril(Footer),
 	        ]);
 	    },
